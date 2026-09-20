@@ -3,6 +3,25 @@
 Dieses Dokument dient als kontinuierliches Gedächtnis des Projekts. 
 Hier werden fundamentale Architekturentscheidungen, erreichte Meilensteine und offene Punkte chronologisch (neueste Einträge oben) dokumentiert.
 
+### 2026-09-20 - Vollständiger Sicherheits-, Secret- & Privacy-Audit durchgeführt (SECURE)
+- **Entscheidung / Änderung:**
+  - Audit nach den Vorgaben des Skills `security-audit` durchgeführt:
+    1. **Secrets & Credentials:** Vollständiger Regex- und Entropiescan ergab 0 hardcodierte Tokens, API-Keys oder Passwörter im Quellcode.
+    2. **SAST & Injection-Prüfung:** 0 unsichere `eval()`/`exec()`-Aufrufe, kein `shell=True` bei Subprozessen, kein unsicheres `pickle`/YAML.
+    3. **Dateisystem:** Audioverarbeitung erfolgt zu 100 % flüchtig im RAM (NumPy-Array via FIFO-Queue); keine unsicheren `/tmp`-Dateien.
+    4. **Offline-Garantie:** `WhisperTranscriber` erzwingt `local_files_only=True` zur Verhinderung von ungewollten HuggingFace-Netzwerkverbindungen.
+    5. **RAM-Audio-Flushing:** `TranscriptionWorker` überschreibt das NumPy-Audioarray im RAM nach Inferenzende sofort mit Nullen (`audio_data.fill(0.0)`).
+  - Neuer Sicherheitstest `test_transcription_worker_ram_audio_flushing` in `tests/test_transcribe.py` integriert; alle 19 Tests PASSED.
+  - Ausführlicher Bericht in `docs/security_audit_report.md` generiert.
+- **Betroffene Komponenten:**
+  - `docs/security_audit_report.md`
+  - `prototype/utils/transcriber.py`
+  - `prototype/ui/transcription_worker.py`
+  - `tests/test_transcribe.py`
+  - `docs/JOURNAL.md`
+
+---
+
 ### 2026-09-20 - Richtlinien für Test-Zwang, lückenlose Protokollierung und Workspace-Autonomie verankert
 - **Entscheidung / Änderung:**
   - `AGENTS.md` um verbindliche Richtlinien erweitert:

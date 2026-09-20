@@ -74,3 +74,22 @@ def test_transcribe_with_mocked_model() -> None:
         assert sBuffy_result == "Hallo Welt, dies ist ein lokaler Test."
         assert meta["language"] == "de"
         assert meta["language_probability"] == 0.98
+
+
+def test_transcription_worker_ram_audio_flushing() -> None:
+    """Verifiziert, dass Audiodaten im RAM nach Inferenzabschluss aus Datenschutzgruenden genullt werden."""
+    from prototype.ui.transcription_worker import TranscriptionWorker
+
+    mock_transcriber = MagicMock()
+    mock_transcriber.transcribe.return_value = ("Ergebnis", {"language": "de"})
+
+    # Array mit Werten initialisieren
+    audio_data: np.ndarray = np.ones(1600, dtype=np.float32)
+    assert np.any(audio_data != 0.0)
+
+    worker: TranscriptionWorker = TranscriptionWorker(mock_transcriber, audio_data)
+    worker.run()
+
+    # Nach run() muss das Array vollstaendig genullt sein
+    assert np.all(audio_data == 0.0)
+

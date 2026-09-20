@@ -37,12 +37,22 @@ class WhisperTranscriber:
         self._compute_type: str = compute_type
         self._default_language: Optional[str] = default_language
 
-        # Initialisiert das lokale CTranslate2/faster-whisper Modell
-        self._model: WhisperModel = WhisperModel(
-            model_size_or_path=self._model_size,
-            device=self._device,
-            compute_type=self._compute_type,
-        )
+        # Initialisiert das lokale CTranslate2/faster-whisper Modell (bevorzugt strikt offline)
+        try:
+            self._model: WhisperModel = WhisperModel(
+                model_size_or_path=self._model_size,
+                device=self._device,
+                compute_type=self._compute_type,
+                local_files_only=True,
+            )
+        except Exception:
+            # Falls das Modell noch nicht im lokalen Cache vorliegt, einmalig herunterladen
+            self._model = WhisperModel(
+                model_size_or_path=self._model_size,
+                device=self._device,
+                compute_type=self._compute_type,
+                local_files_only=False,
+            )
 
     @property
     def model_size(self) -> str:

@@ -6,7 +6,7 @@
 
 ---
 
-## 📸 UI-Zustände & Screenshots (Prototyp)
+## UI-Zustände & Screenshots (Prototyp)
 
 Die schwebende Kapsel behält über alle Zustände hinweg eine **konstante Breite von 420 px** bei. Sie bleibt stabil am oberen Bildschirmrand verankert, springt beim Zustandswechsel nicht und dehnt sich nur beim Öffnen des Editors vertikal nach unten aus.
 

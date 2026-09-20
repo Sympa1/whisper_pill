@@ -32,10 +32,17 @@ class TranscriptionWorker(QThread):
         self._audio_data: np.ndarray = audio_data
 
     def run(self) -> None:
-        """Fuehrt die Transkription im separaten Thread aus."""
+        """Fuehrt die Transkription im separaten Thread aus und bereinigt den Audiospeicher."""
         try:
             sBuffy_text, meta_info = self._transcriber.transcribe(self._audio_data)
             self.finished.emit(sBuffy_text, meta_info)
         except Exception as exc:
             sBuffy_err: str = f"Fehler bei Transkription: {exc}"
             self.failed.emit(sBuffy_err)
+        finally:
+            # Datenschutz & RAM-Hygiene: Audio-Array nach Inferenz im Speicher nullen
+            if isinstance(self._audio_data, np.ndarray) and self._audio_data.size > 0:
+                try:
+                    self._audio_data.fill(0.0)
+                except (ValueError, RuntimeError):
+                    pass
