@@ -3,6 +3,19 @@
 Dieses Dokument dient als kontinuierliches Gedächtnis des Projekts. 
 Hier werden fundamentale Architekturentscheidungen, erreichte Meilensteine und offene Punkte chronologisch (neueste Einträge oben) dokumentiert.
 
+### 2026-09-20 - Richtlinien für Test-Zwang, lückenlose Protokollierung und Workspace-Autonomie verankert
+- **Entscheidung / Änderung:**
+  - `AGENTS.md` um verbindliche Richtlinien erweitert:
+    1. **Verpflichtende Testausführung nach jedem Schritt:** Nach jeder Code-Änderung wird automatisch der passende Test via `pytest` (`test-core`, `test-ui`, `test-e2e`) gestartet.
+    2. **Lückenlose Protokollierung:** Jeder Arbeitsschritt wird kontinuierlich oben in `docs/JOURNAL.md` dokumentiert.
+    3. **Autonome Workspace-Befehlsausführung:** Innerhalb des Repositories (`/home/sympa/Dev/whisper_pill/`) werden Datei- und Shell-Operationen (`ls -la`, `cat`, `pytest`, `python` etc.) selbstständig und ohne Unterbrechung ausgeführt. Rückfragen erfolgen nur bei Operationen außerhalb des Projektverzeichnisses.
+  - Automatische Testsuite ausgeführt; alle 18 Tests erfolgreich PASSED.
+- **Betroffene Komponenten:**
+  - `AGENTS.md`
+  - `docs/JOURNAL.md`
+
+---
+
 ### 2026-09-20 - README.md mit visuellem Prototyp-Showcase aktualisiert
 - **Entscheidung / Änderung:**
   - `README.md` um einen visuellen Live-Showcase der 4 echten Kapselzustände (`docs/assets/state_*.png`) erweitert.

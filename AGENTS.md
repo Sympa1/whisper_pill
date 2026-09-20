@@ -47,22 +47,25 @@ Diese Anweisungen gelten spezifisch für das Repository und die Entwicklung von 
 - Immer die Best Practices der jeweiligen Programmiersprache befolgen (idiomatischer Code).
 - Framework- und Sprach-Konventionen einhalten.
 
-## Workspace-Richtlinie
+## Workspace- & Ausfuehrungs-Richtlinie
 - Artefakte, Pläne und Notizen dürfen ausschließlich im aktuellen Arbeitsverzeichnis (Workspace-Root) abgelegt werden, nicht in globalen Anwendungsdaten-Verzeichnissen (wie `~/.gemini/`).
-- Für den Prototypen ein .venv im Verzeichnis prototyp erstellen.
+- **Freie Befehlsausführung im Projekt:** Innerhalb des Projektverzeichnisses (`whisper_pill`) dürfen Dateien, Verzeichnisse und Befehle (`ls`, `cat`, `grep`, `pytest`, `python` etc.) vollkommen frei, eigenständig und ohne Rückfrage aufgerufen und gelesen werden.
+- **Rückfragepflicht außerhalb:** Eine vorherige Rückfrage ist nur dann erforderlich, wenn Aktionen außerhalb des Projektverzeichnisses stattfinden sollen (z. B. systemweite Installationen oder globale OS-Dateien außerhalb des Workspaces).
+- Für den Prototypen ein .venv im Verzeichnis `prototype` verwenden.
 
-## Arbeitsweise & Projekt-Journal (`docs/JOURNAL.md`)
+## Arbeitsweise, Test-Zwang & Projekt-Journal (`docs/JOURNAL.md`)
 - **Autonome Arbeitsweise & durchgängige Ausführung:**
-  - Logisch aufeinanderfolgende Schritte (z. B. Planen -> Implementieren -> Tests ausführen -> Fehler beheben -> Dokumentieren -> Commit/Push vorbereiten) sind **selbstständig, proaktiv und am Stück** durchzuführen.
+  - Logisch aufeinanderfolgende Schritte (Planen -> Implementieren -> Tests ausführen -> Fehler beheben -> Dokumentieren -> Commit/Push vorbereiten) sind **selbstständig, proaktiv und am Stück** durchzuführen.
   - Es muss nicht nach jedem einzelnen Zwischenschritt auf Bestätigung gewartet werden.
   - Bei klaren Anforderungen durcharbeiten und das Gesamtergebnis präsentieren. Nur bei echten Zielkonflikten oder unklaren Anforderungen rückfragen.
+- **Test-Ausführung nach jedem Schritt (Pflicht):**
+  - Nach jedem implementierten Schritt oder jeder Code-Änderung ist zwingend der passende Test aus den verfügbaren Test-Skills (`test-core`, `test-ui`, `test-e2e` bzw. `pytest`) eigenständig auszuführen.
+  - Kein Schritt gilt als abgeschlossen, bevor nicht alle Tests grün durchgelaufen sind.
+- **Lückenlose Dokumentation in `docs/JOURNAL.md` (Pflicht):**
+  - Jeder durchgeführte Schritt, jede Architekturentscheidung und jede Änderung ist verbindlich und chronologisch oben in `docs/JOURNAL.md` zu vermerken.
 - **Session-Start & Referenzierung (Pflicht):**
   - Lies zu Beginn jeder neuen Sitzung oder vor der Bearbeitung neuer Aufgaben zuerst `docs/JOURNAL.md` ein.
   - Nutze die dort dokumentierten Entscheidungen und offenen Punkte als primäre Referenz für den aktuellen Projektstand.
-- **Ablauf bei Änderungen (Planen -> Umsetzen -> Dokumentieren):**
-  1. **Planung:** Vor größeren Änderungen kurz den Lösungsweg skizzieren und erklären.
-  2. **Implementierung:** Tests und Code schrittweise und eigenständig umsetzen.
-  3. **Dokumentation:** Nach Abschluss eines Meilensteins das Ergebnis oben in `docs/JOURNAL.md` eintragen.
 
 ## Projektziel, Architektur & Phasen
 - **Ziel:** Schlankes, minimalistisches, schwebendes Desktop-Diktier-Utility (Pill-UI) für Linux und Windows als freie, quelloffene Alternative zu Whisperbar.
