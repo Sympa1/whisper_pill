@@ -1,0 +1,375 @@
+// Wiederverwendbarer Pill-Button mit exakter Inhaltsbreite und vertikaler Zentrierung
+component PillButton inherits Rectangle {
+    in property <string> text;
+    in property <color> bg-color: #3f3f46;
+    in property <color> hover-color: #52525b;
+    in property <color> text-color: #fafafa;
+    in property <length> border-w: 0px;
+    in property <color> border-c: transparent;
+    in property <bool> is-bold: true;
+    callback clicked();
+
+    width: label.preferred-width + 24px;
+    height: 28px;
+    background: touch.has-hover ? hover-color : bg-color;
+    border-radius: 12px;
+    border-width: border-w;
+    border-color: border-c;
+
+    animate background { duration: 100ms; }
+
+    label := Text {
+        text: root.text;
+        color: root.text-color;
+        font-size: 12px;
+        font-weight: root.is-bold ? 600 : 400;
+        vertical-alignment: center;
+        horizontal-alignment: center;
+    }
+
+    touch := TouchArea {
+        clicked => { root.clicked(); }
+    }
+}
+
+// Dezentes Icon-Button (z. B. ✕ Schliessen)
+component IconButton inherits Rectangle {
+    in property <string> icon-text: "✕";
+    callback clicked();
+
+    width: 24px;
+    height: 24px;
+    background: transparent;
+
+    Text {
+        text: root.icon-text;
+        color: icon-touch.has-hover ? #fafafa : #71717a;
+        font-size: 14px;
+        vertical-alignment: center;
+        horizontal-alignment: center;
+        animate color { duration: 100ms; }
+    }
+
+    icon-touch := TouchArea {
+        clicked => { root.clicked(); }
+    }
+}
+
+// Einzelner abgerundeter Wellenform-Balken mit zentrierter Hoehe
+component WaveformBar inherits Rectangle {
+    in property <length> bar-height: 4px;
+    width: 4px;
+    height: bar-height;
+    background: #38bdf8;
+    border-radius: 2px;
+    y: (28px - self.height) / 2;
+}
+
+export component AppWindow inherits Window {
+    title: "whisper-pill";
+    no-frame: true;
+    background: transparent;
+    always-on-top: true;
+    width: 480px;
+    height: is-expanded ? 240px : 48px;
+
+    // Zustandsvariablen: 0: Idle, 1: Recording, 2: Processing, 3: Ready, 4: Expanded
+    in-out property <int> current-state: 1;
+    in-out property <bool> is-expanded: false;
+    in-out property <string> timer-string: "00:04";
+    in-out property <string> transcript-string: "";
+
+    // Hoehen der 11 Wellenform-Balken
+    in-out property <length> bar0: 4px;
+    in-out property <length> bar1: 6px;
+    in-out property <length> bar2: 10px;
+    in-out property <length> bar3: 16px;
+    in-out property <length> bar4: 22px;
+    in-out property <length> bar5: 26px;
+    in-out property <length> bar6: 22px;
+    in-out property <length> bar7: 16px;
+    in-out property <length> bar8: 10px;
+    in-out property <length> bar9: 6px;
+    in-out property <length> bar10: 4px;
+
+    // Callbacks an den Rust-Code
+    callback start-recording();
+    callback stop-recording();
+    callback resume-recording();
+    callback toggle-details();
+    callback copy-text();
+    callback dismiss();
+    callback quit-app();
+
+    capsule := Rectangle {
+        width: 480px;
+        height: root.is-expanded ? 240px : 48px;
+        background: #18181be6; // rgba(24, 24, 27, 0.95)
+        border-radius: root.is-expanded ? 16px : 24px;
+        border-width: 1px;
+        border-color: #ffffff1f; // rgba(255, 255, 255, 0.12)
+        clip: true;
+
+        animate height { duration: 150ms; easing: ease-out; }
+        animate border-radius { duration: 150ms; easing: ease-out; }
+
+        // ==========================================
+        // ZUSTAND 0: IDLE (Bereit zum Aufnehmen)
+        // ==========================================
+        if root.current-state == 0 && !root.is-expanded : Rectangle {
+            width: 480px;
+            height: 48px;
+
+            // Links: App-Titel
+            Text {
+                x: 20px;
+                y: 0px;
+                height: 48px;
+                text: "🎙 whisper-pill";
+                color: #e4e4e7;
+                font-size: 13px;
+                font-weight: 600;
+                vertical-alignment: center;
+            }
+
+            // Rechts: Start-Button
+            HorizontalLayout {
+                x: 480px - self.width - 20px;
+                y: (48px - 28px) / 2;
+                height: 28px;
+                alignment: end;
+
+                PillButton {
+                    text: "● Aufnehmen";
+                    bg-color: #ef4444;
+                    hover-color: #dc2626;
+                    text-color: #ffffff;
+                    clicked => { root.start-recording(); }
+                }
+            }
+        }
+
+        // ==========================================
+        // ZUSTAND 1: RECORDING (Aktive Aufnahme)
+        // ==========================================
+        if root.current-state == 1 && !root.is-expanded : Rectangle {
+            width: 480px;
+            height: 48px;
+
+            // Links: Roter REC-Indikator
+            Text {
+                x: 20px;
+                y: 0px;
+                height: 48px;
+                text: "● REC";
+                color: #ef4444;
+                font-size: 13px;
+                font-weight: 700;
+                vertical-alignment: center;
+            }
+
+            // Exakt mathematisch zentrierte Waveform bei x = (480 - 90) / 2 = 195px
+            waveform-container := Rectangle {
+                x: (480px - 90px) / 2;
+                y: (48px - 28px) / 2;
+                width: 90px;
+                height: 28px;
+
+                HorizontalLayout {
+                    alignment: center;
+                    spacing: 4px;
+                    WaveformBar { bar-height: root.bar0; }
+                    WaveformBar { bar-height: root.bar1; }
+                    WaveformBar { bar-height: root.bar2; }
+                    WaveformBar { bar-height: root.bar3; }
+                    WaveformBar { bar-height: root.bar4; }
+                    WaveformBar { bar-height: root.bar5; }
+                    WaveformBar { bar-height: root.bar6; }
+                    WaveformBar { bar-height: root.bar7; }
+                    WaveformBar { bar-height: root.bar8; }
+                    WaveformBar { bar-height: root.bar9; }
+                    WaveformBar { bar-height: root.bar10; }
+                }
+            }
+
+            // Rechts: Zeitanzeige und Stop-Button
+            HorizontalLayout {
+                x: 480px - self.width - 20px;
+                y: (48px - 28px) / 2;
+                height: 28px;
+                spacing: 12px;
+                alignment: end;
+
+                Text {
+                    text: root.timer-string;
+                    color: #a1a1aa;
+                    font-size: 13px;
+                    font-family: "monospace";
+                    font-weight: 600;
+                    vertical-alignment: center;
+                }
+
+                PillButton {
+                    text: "■ Stop";
+                    bg-color: #3f3f46;
+                    hover-color: #52525b;
+                    text-color: #fafafa;
+                    clicked => { root.stop-recording(); }
+                }
+            }
+        }
+
+        // ==========================================
+        // ZUSTAND 2: PROCESSING (Inferenz)
+        // ==========================================
+        if root.current-state == 2 && !root.is-expanded : Rectangle {
+            width: 480px;
+            height: 48px;
+
+            Text {
+                x: 20px;
+                y: 0px;
+                height: 48px;
+                text: "⟳ Transkribiere Audiosignal...";
+                color: #38bdf8;
+                font-size: 13px;
+                font-weight: 600;
+                vertical-alignment: center;
+            }
+        }
+
+        // ==========================================
+        // ZUSTAND 3: READY (Kopiert & Schnellaktionen)
+        // ==========================================
+        if root.current-state == 3 && !root.is-expanded : Rectangle {
+            width: 480px;
+            height: 48px;
+
+            // Links: Erfolgsmeldung in Gruen (reichlich Platz auf 480px Breite)
+            Text {
+                x: 20px;
+                y: 0px;
+                height: 48px;
+                text: "✔ In Zwischenablage kopiert!";
+                color: #22c55e;
+                font-size: 13px;
+                font-weight: 600;
+                vertical-alignment: center;
+            }
+
+            // Rechts: Aktionen
+            HorizontalLayout {
+                x: 480px - self.width - 20px;
+                y: (48px - 28px) / 2;
+                height: 28px;
+                spacing: 8px;
+                alignment: end;
+
+                PillButton {
+                    text: "+ Weiter";
+                    bg-color: #38bdf826;
+                    hover-color: #38bdf840;
+                    text-color: #38bdf8;
+                    border-w: 1px;
+                    border-c: #38bdf866;
+                    clicked => { root.resume-recording(); }
+                }
+
+                PillButton {
+                    text: "↗ Details";
+                    bg-color: #27272a;
+                    hover-color: #3f3f46;
+                    text-color: #e4e4e7;
+                    border-w: 1px;
+                    border-c: #ffffff1a;
+                    clicked => { root.toggle-details(); }
+                }
+
+                IconButton {
+                    icon-text: "✕";
+                    clicked => { root.dismiss(); }
+                }
+            }
+        }
+
+        // ==========================================
+        // ZUSTAND 4: EXPANDED (Text-Editor & Review)
+        // ==========================================
+        if root.is-expanded : VerticalLayout {
+            padding-left: 16px;
+            padding-right: 16px;
+            padding-top: 12px;
+            padding-bottom: 12px;
+            spacing: 10px;
+
+            // Kopfzeile
+            HorizontalLayout {
+                alignment: space-between;
+
+                HorizontalLayout {
+                    spacing: 8px;
+                    PillButton {
+                        text: "▲ Zuklappen";
+                        bg-color: #27272a;
+                        hover-color: #3f3f46;
+                        text-color: #e4e4e7;
+                        border-w: 1px;
+                        border-c: #ffffff1a;
+                        clicked => { root.toggle-details(); }
+                    }
+
+                    PillButton {
+                        text: "✕ Verbergen";
+                        bg-color: #27272a;
+                        hover-color: #3f3f46;
+                        text-color: #e4e4e7;
+                        border-w: 1px;
+                        border-c: #ffffff1a;
+                        clicked => { root.dismiss(); }
+                    }
+
+                    PillButton {
+                        text: "⏻ Beenden";
+                        bg-color: #ef444426;
+                        hover-color: #ef4444;
+                        text-color: #f87171;
+                        border-w: 1px;
+                        border-c: #ef444459;
+                        clicked => { root.quit-app(); }
+                    }
+                }
+
+                PillButton {
+                    text: "⎘ Text kopieren";
+                    bg-color: #38bdf8;
+                    hover-color: #0ea5e9;
+                    text-color: #09090b;
+                    clicked => { root.copy-text(); }
+                }
+            }
+
+            // Dunkler Texteditor mit heller Schrift (#F4F4F5), voller Breite und Zwei-Wege-Binding
+            Rectangle {
+                background: #18181b;
+                border-radius: 12px;
+                border-width: 1px;
+                border-color: #ffffff1f;
+                clip: true;
+
+                TextInput {
+                    x: 12px;
+                    y: 10px;
+                    width: parent.width - 24px;
+                    height: parent.height - 20px;
+                    text <=> root.transcript-string;
+                    color: #f4f4f5; // Hellweiss auf dunklem Hintergrund
+                    selection-background-color: #38bdf840;
+                    selection-foreground-color: #ffffff;
+                    font-size: 13px;
+                    wrap: word-wrap;
+                    single-line: false;
+                }
+            }
+        }
+    }
+}

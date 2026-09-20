@@ -1,0 +1,47 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "whisper-pill: Rust App starten (cargo run)",
+      "type": "shell",
+      "command": "cargo run --manifest-path app/Cargo.toml",
+      "problemMatcher": ["$rustc"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "whisper-pill: Rust App kompilieren (cargo build)",
+      "type": "shell",
+      "command": "cargo build --manifest-path app/Cargo.toml",
+      "problemMatcher": ["$rustc"],
+      "group": "build"
+    },
+    {
+      "label": "whisper-pill: Rust Tests ausführen (cargo test)",
+      "type": "shell",
+      "command": "cargo test --manifest-path app/Cargo.toml",
+      "problemMatcher": ["$rustc"],
+      "group": "test"
+    },
+    {
+      "label": "whisper-pill: Python Prototyp starten",
+      "type": "shell",
+      "command": "${workspaceFolder}/prototype/.venv/bin/python ${workspaceFolder}/prototype/main.py",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    }
+  ]
+}

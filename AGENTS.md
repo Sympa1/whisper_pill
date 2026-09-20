@@ -21,7 +21,7 @@ Diese Anweisungen gelten spezifisch für das Repository und die Entwicklung von 
 - **Verbot anderer externer Bibliotheken:** Alle weiteren Drittanbieter-Pakete sind standardmäßig untersagt. Externe Abhängigkeiten sind nach Möglichkeit immer zu vermeiden (Standardbibliothek bevorzugen).
 - **Genehmigungspflicht:** Sollte ein zusätzliches externes Paket zwingend erforderlich sein, muss vor der Verwendung zwingend nachgefragt und eine nachvollziehbare Begründung geliefert werden.
 - **Konfigurationsformat:** Für Konfigurationen im Prototyp wird ausschließlich `json` (Standardbibliothek) verwendet (kein YAML/INI).
-- **Rust:** Spezifische Vorgaben und Whitelists für Rust-Crates (`whisper-rs`, `cpal`, `arboard`, `serde`, `toml` etc.) folgen zu einem späteren Projektzeitpunkt bei der Portierung.
+- **Rust:** Spezifische Vorgaben und Whitelists für Rust-Crates (`whisper-rs`, `cpal`, `arboard`, `serde`, `toml`, `enigo`, `rdev`, `serde_json`) folgen zu einem späteren Projektzeitpunkt bei der Portierung.
 
 ## Code-Kommentare
 - Alle Code-Kommentare ausschließlich in deutscher Sprache verfassen.

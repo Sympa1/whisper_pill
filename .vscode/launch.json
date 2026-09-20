@@ -2,7 +2,13 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "whisper-pill (Desktop-Pill starten)",
+      "name": "Rust App starten (cargo run)",
+      "type": "debugpy",
+      "request": "launch",
+      "preLaunchTask": "whisper-pill: Rust App starten (cargo run)"
+    },
+    {
+      "name": "Python Prototyp starten",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/prototype/main.py",

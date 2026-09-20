@@ -3,6 +3,91 @@
 Dieses Dokument dient als kontinuierliches Gedächtnis des Projekts. 
 Hier werden fundamentale Architekturentscheidungen, erreichte Meilensteine und offene Punkte chronologisch (neueste Einträge oben) dokumentiert.
 
+### 2026-09-20 - Phase 2: Shortcut-Verhalten optimiert (Pill ausblenden & Aufnahme beenden via Toggle)
+- **Entscheidung / Änderung:**
+  - Auf Nutzeranforderung wurde das Verhalten des globalen Shortcuts (`Super+Strg+P` / `Meta+Ctrl+P`) grundlegend auf einen nahtlosen "Push-to-Dictate & Hide"-Workflow umgestellt:
+    1. **Sichtbare Pill (Aufnahme aktiv oder bereit):**
+       - Beim Drücken des Shortcuts wird die Aufnahme sofort beendet (Audiodaten werden im Hintergrund transkribiert und der Text landet flüchtig in der Zwischenablage).
+       - Gleichzeitig wird die Pill **sofort ausgeblendet** (`win.hide()`), sodass der Desktop ohne störendes Kapsel-Overlay frei bleibt und der Text direkt mit `Strg+V` in die aktive Anwendung eingefügt werden kann.
+    2. **Ausgeblendete Pill:**
+       - Beim erneuten Drücken des Shortcuts wird die Pill wieder eingeblendet (`win.show()`), auf Kapselgröße (480x48 px) zurückgesetzt und **sofort eine neue Aufnahme gestartet**.
+    3. **Daemon Event-Loop (`slint::run_event_loop_until_quit`):**
+       - Durch Umstellung von `app_window.run()` auf `slint::run_event_loop_until_quit()` bleibt der Hintergrund-Prozess inklusive KDE D-Bus Hotkey-Listener und System-Tray-Icon dauerhaft aktiv, selbst wenn kein Fenster sichtbar ist.
+    4. **Konsistentes Tray- und UI-Verhalten:**
+       - Klick auf das `✕` (Dismiss) im Ready-Zustand blendet die Pill ebenfalls aus.
+       - Im ausgeklappten Editor stehen nun `▲ Zuklappen` (zum Einklappen auf 48 px), `✕ Verbergen` (zum Ausblenden) und `⏻ Beenden` zur Verfügung.
+       - Der Menüeintrag im System-Tray spiegelt das Verhalten mit der Beschriftung `Diktat starten / beenden (Super+Strg+P)` wider.
+  - Alle 8 Rust-Tests (`cargo test`) und 19 Python-Tests (`pytest`) erfolgreich PASSED.
+- **Betroffene Komponenten:**
+  - `app/src/main.rs`
+  - `app/src/platform/tray.rs`
+  - `app/ui/appwindow.slint`
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-09-20 - Phase 2: Umstellung auf Slint UI (Vektor-Kapsel, Subpixel-Schriften & perfekte Transparenz)
+- **Entscheidung / Änderung:**
+  - Da `egui` unter Wayland bei Fenstertransparenz, Schatten und nativer Typografie Einschränkungen zeigte, wurde die Benutzeroberfläche auf **Slint 1.18** migriert.
+  - Slint wurde von ehemaligen Qt-Core-Entwicklern geschaffen und kombiniert deklarative Syntax (`.slint`) mit nativer Vektorgrafik und FreeType-Subpixel-Schriftarten bei extrem geringem Speicherverbrauch (~15 MB RAM).
+  - Umgesetzte UI-Features in [`app/ui/appwindow.slint`](file:///home/sympa/Dev/whisper_pill/app/ui/appwindow.slint):
+    1. **Kapselform & Breite:** Kapselbreite auf **480 px** vergrößert (48 px Höhe, bzw. 240 px im Editor, Radius 24 px), wodurch die Erfolgsmeldung "✔ In Zwischenablage kopiert!" und alle Aktionsbuttons (`+ Weiter`, `↗ Details`, `✕`) vollständig und luftig ohne Umbruch nebeneinander Platz finden.
+    2. **Farben & Kontraste:** Exakte Prototyp-Farbwerte (`rgba(24, 24, 27, 0.95)`, Border `rgba(255, 255, 255, 0.12)`).
+    3. **Pill-Buttons & Editor-Sichtbarkeit:** Eigene `PillButton`-Komponente (`● Aufnehmen`, `■ Stop`, `+ Weiter`, `↗ Details / Edit`, `✕ Verbergen`, `⏻ Beenden`, `⎘ Text kopieren`). Im ausgeklappten Editor wurde das Standard-Widget durch ein maßgeschneidertes `TextInput` mit expliziter Textfarbe `#F4F4F5` und Zwei-Wege-Binding (`text <=> root.transcript-string`) ersetzt, wodurch transkribierter Text sofort gestochen scharf in Weiß lesbar ist.
+    4. **Waveform:** 11 vertikale Kapselbalken in `#38BDF8` mit abgerundeten Kappen (`border-radius: 2px`).
+    5. **Exakte Geometrie & Platzierung:** Beseitigung der Asymmetrie durch mathematisch exakte Zentrierung der Waveform bei `x = (480px - 90px) / 2 = 195px` und vertikale Zentrierung jedes Balkens bei `y: (28px - height) / 2`. Feste 20px Randabstände links/rechts für Text und Buttons, vertikal exakt auf 24px zentriert. Dynamische Fensteranpassung (`win.window().set_size(480, 240)`) beim Auf- und Zuklappen.
+    6. **Button-Breitenkorrektur (Idle-State):** `PillButton` definiert nun explizit `width: label.preferred-width + 24px;`, wodurch verhindert wird, dass der `● Aufnehmen`-Button nach dem Stoppen die gesamte Kapselbreite einnimmt. Verpackung in `HorizontalLayout` bei `x: 480px - self.width - 20px`.
+    7. **Whisper GGML-Modell bereitgestellt & Auto-Downloader:**
+       - Whisper GGML Base Modell (`ggml-base.bin`, 142 MB) im lokalen Cache `~/.cache/whisper_pill/` abgelegt.
+       - Automatischer Downloader (`WhisperEngine::ensure_model_available`) implementiert, der fehlende Modelle bei Bedarf selbstständig via `curl` lädt.
+    8. **System-Tray-Icon (KDE StatusNotifierItem via ksni):**
+       - Natives Mikrofon-Icon `audio-input-microphone` in der Taskleiste integriert.
+       - Rechtsklick-Menü für Aufnahme starten/stoppen und geordnetes Beenden.
+    9. **Globale Shortcuts & D-Bus Listener:**
+       - Automatische Registrierung des globalen Shortcuts `Super+Strg+P` (Meta+Ctrl+P, Keycode `335544400`) in KDE KGlobalAccel via D-Bus (`doRegister` und `setShortcut`).
+       - Asynchroner D-Bus Signal-Stream für sofortiges Starten/Stoppen der Aufnahme bei Tastendruck.
+    10. **Robuste Audio-Architektur:** Entkopplung des `AudioRecorder` in einen exklusiven Dedicated Audio-Worker-Thread via Message-Passing (`AudioCommand::Start`, `AudioCommand::Stop`), wodurch plattformspezifische ALSA `Send`-Restriktionen vollständig eliminiert wurden.
+  - Alle 8 Unit-Tests (`test audio::*`, `test platform::*`, `test transcription::*`) erfolgreich PASSED.
+- **Betroffene Komponenten:**
+  - `app/Cargo.toml`
+  - `app/build.rs`
+  - `app/ui/appwindow.slint`
+  - `app/src/main.rs`
+  - `app/src/platform/tray.rs`
+  - `app/src/platform/hotkey.rs`
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-09-20 - Phase 2: Native Rust-Implementierung, Migration in app/ & Pixel-Perfektion des UI
+- **Entscheidung / Änderung:**
+  - Start von Phase 2: Vollständige Neuentwicklung der nativen Desktop-Anwendung in Rust.
+  - Das Rust-Projekt wurde sauber in das Unterverzeichnis `app/` strukturiert (analog zu `prototype/` für Python).
+  - **Pixel-Perfektionierung der Benutzeroberfläche (1:1 Angleichung an den Prototyp):**
+    1. Kapsel-Styling: Echte Alpha-Transparenz ohne schwarze Fensterecken (`panel_fill` & `window_fill = Color32::TRANSPARENT`), Kapselhintergrund `rgba(24, 24, 27, 0.95)`, feiner 1px-Rahmen `rgba(255, 255, 255, 0.12)`.
+    2. Pill-Buttons: Individuell gezeichnete abgerundete Buttons (`Rounding::same(12.0)`) mit den originalen Prototyp-Farben (`● Aufnehmen` Rot `#EF4444`, `■ Stop` Anthrazit `#3F3F46`, `+ Weiter` Cyan `#38BDF8`, `↗ Details` Dunkelgrau `#27272A`).
+    3. Waveform: Exakt 11 vertikale Balken mit abgerundeten Kappen (`Rounding::same(2.0)`), Glockenkurven-Gewichtung und Farbe `#38BDF8`.
+    4. Platzierung: Automatische Zentrierung oben mittig am Bildschirm (`y = 40 px`) beim Start.
+    5. One-Touch Workflow: Sofortige Aufnahmebereitschaft beim Starten bzw. Shortcut-Druck (`Super+Strg+P`), automatische Stille-Erkennung mit VAD und Auto-Reset nach 8s im Ready-Zustand.
+  - Architektur & Module umgesetzt:
+    1. `app/src/state.rs`: 5 Kapselzustände (`Idle`, `Recording`, `Processing`, `Ready`, `Expanded`).
+    2. `app/src/config.rs`: `AppConfig` mit RMS-Schwellenwert (0.012), 2.5s Stille-Timeout und 16 kHz Sample-Rate.
+    3. `app/src/audio/vad.rs`: `SilenceDetector` mit Echtzeit-RMS-Berechnung und automatischem Stopp nach 2.5–3s Sprechpause (inkl. Unit-Tests).
+    4. `app/src/audio/recorder.rs`: `AudioRecorder` via `cpal`, Stereo-zu-Mono Downmixing, lineares Resampling auf 16 kHz und RAM-Flushing.
+    5. `app/src/transcription/engine.rs`: `WhisperEngine` via `whisper-rs` (lokale GGML-Modelle, typsicherer Segment-Iterator).
+    6. `app/src/platform/clipboard.rs`: `ClipboardManager` via `arboard`.
+    7. `app/src/platform/hotkey.rs`: `HotkeyManager` mit Linux D-Bus Listener für KDE KGlobalAccel Signal `globalShortcutPressed` (`Super+Strg+P`).
+    8. `app/src/ui/waveform.rs`: `WaveformWidget` für flüssige dynamische Wellenform in der Kapsel.
+    9. `app/src/ui/app.rs`: `PillApp` Kapsel-UI (420x48 px, abgerundete Ecken 24 px, ausgeklappt 420x240 px) mit One-Touch Aufnahme, Drag-to-Move, Stille-Erkennung und Fortsetzen-Button.
+    10. `app/src/main.rs`: Haupteinsprungpunkt mit rahmenlosem, transparentem Fenster (`eframe`).
+  - Alle 6 Rust-Tests und 19 Python-Tests erfolgreich (`PASSED`).
+- **Betroffene Komponenten:**
+  - `app/Cargo.toml`
+  - `app/src/`
+  - `docs/JOURNAL.md`
+
+---
+
 ### 2026-09-20 - Redundanten Symlink AGENT.md entfernt (Konsolidierung auf AGENTS.md)
 - **Entscheidung / Änderung:**
   - Der redundante Symlink `AGENT.md` wurde entfernt. Die Projekt-Richtlinien verbleiben eindeutig und konsolidiert in der Standarddatei `AGENTS.md`.
