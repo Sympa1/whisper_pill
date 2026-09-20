@@ -51,6 +51,15 @@ Diese Anweisungen gelten spezifisch für das Repository und die Entwicklung von 
 - Artefakte, Pläne und Notizen dürfen ausschließlich im aktuellen Arbeitsverzeichnis (Workspace-Root) abgelegt werden, nicht in globalen Anwendungsdaten-Verzeichnissen (wie `~/.gemini/`).
 - Für den Prototypen ein .venv im Verzeichnis prototyp erstellen.
 
+## Arbeitsweise & Projekt-Journal (`docs/JOURNAL.md`)
+- **Session-Start & Referenzierung (Pflicht):**
+  - Lies zu Beginn jeder neuen Sitzung oder vor der Bearbeitung neuer Aufgaben zuerst `docs/JOURNAL.md` ein.
+  - Nutze die dort dokumentierten Entscheidungen und offenen Punkte als primäre Referenz für den aktuellen Projektstand.
+- **Ablauf bei Änderungen (Planen -> Umsetzen -> Dokumentieren):**
+  1. **Planung:** Vor größeren Änderungen kurz den Lösungsweg skizzieren und erklären.
+  2. **Implementierung:** Tests und Code schrittweise umsetzen.
+  3. **Dokumentation:** Nach Abschluss eines Meilensteins das Ergebnis oben in `docs/JOURNAL.md` eintragen.
+
 ## Projektziel, Architektur & Phasen
 - **Ziel:** Schlankes, minimalistisches, schwebendes Desktop-Diktier-Utility (Pill-UI) für Linux und Windows als freie, quelloffene Alternative zu Whisperbar.
 - **Architektur:** Rein lokale Desktop-Software. **Kein MCP-Server**, kein externes Backend, keine Cloud-Anbindung.

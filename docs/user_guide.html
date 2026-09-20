@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>whisper-pill – Benutzerhandbuch</title>
+  <style>
+    :root {
+      --bg-main: #0F0F12;
+      --bg-card: #18181B;
+      --bg-pill: #222226;
+      --border-color: rgba(255, 255, 255, 0.12);
+      --text-main: #F4F4F5;
+      --text-muted: #A1A1AA;
+      --accent-cyan: #38BDF8;
+      --accent-green: #22C55E;
+      --accent-red: #EF4444;
+      --kbd-bg: #27272A;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, Cantarell, sans-serif;
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .pill-logo {
+      display: inline-block;
+      background: #18181B;
+      border: 1px solid var(--accent-cyan);
+      border-radius: 24px;
+      padding: 8px 24px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 16px;
+      box-shadow: 0 4px 20px rgba(56, 189, 248, 0.2);
+    }
+
+    .pill-logo span {
+      color: var(--accent-cyan);
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+    }
+
+    section {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 32px;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 12px;
+    }
+
+    h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin: 24px 0 12px 0;
+      color: var(--accent-cyan);
+    }
+
+    p {
+      margin-bottom: 16px;
+      color: #D4D4D8;
+    }
+
+    kbd {
+      background-color: var(--kbd-bg);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-family: monospace;
+      font-size: 0.9em;
+      color: #FAFAFA;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+
+    .state-preview {
+      background-color: #09090B;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    .state-preview img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+
+    .state-desc {
+      margin-top: 14px;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+
+    .step-list {
+      list-style: none;
+      counter-reset: steps;
+      margin: 20px 0;
+    }
+
+    .step-list li {
+      counter-increment: steps;
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 20px;
+      gap: 16px;
+    }
+
+    .step-list li::before {
+      content: counter(steps);
+      background-color: var(--accent-cyan);
+      color: #09090B;
+      font-weight: 800;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-content strong {
+      display: block;
+      color: #FAFAFA;
+      margin-bottom: 4px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    th {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .badge-success {
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--accent-green);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .badge-cyan {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .callout {
+      background: rgba(56, 189, 248, 0.08);
+      border-left: 4px solid var(--accent-cyan);
+      border-radius: 0 8px 8px 0;
+      padding: 16px 20px;
+      margin: 20px 0;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="pill-logo">🎙 <span>whisper</span>-pill</div>
+      <h1>Benutzerhandbuch</h1>
+      <p class="subtitle">Schlankes, schwebendes Desktop-Diktier-Utility für Linux & Windows</p>
+    </header>
+
+    <!-- Schnellstart -->
+    <section>
+      <h2>⚡ Schnellstart & Bedienung</h2>
+      <p>Mit <strong>whisper-pill</strong> diktieren Sie gesprochenen Text direkt in jede beliebige Anwendung – ohne Cloud, ohne Latenz und 100 % lokal.</p>
+
+      <div class="callout">
+        <strong>Globaler Shortcut zum Ein- und Ausblenden:</strong><br>
+        Unter Linux: <kbd>Super</kbd> + <kbd>Strg</kbd> + <kbd>P</kbd><br>
+        Unter Windows: <kbd>Win</kbd> + <kbd>Strg</kbd> + <kbd>P</kbd>
+      </div>
+
+      <ol class="step-list">
+        <li>
+          <div class="step-content">
+            <strong>1. Aufnahme starten</strong>
+            Drücken Sie den globalen Shortcut oder klicken Sie auf der Pill auf <kbd>● Aufnehmen</kbd>.
+          </div>
+        </li>
+        <li>
+          <div class="step-content">
+            <strong>2. Text sprechen</strong>
+            Sprechen Sie normal ins Mikrofon. Die animierte Wellenform visualisiert Ihre Stimme in Echtzeit.
+          </div>
+        </li>
+        <li>
+          <div class="step-content">
+            <strong>3. Aufnahme stoppen</strong>
+            Drücken Sie erneut den Shortcut oder klicken Sie auf <kbd>■ Stop</kbd>.
+          </div>
+        </li>
+        <li>
+          <div class="step-content">
+            <strong>4. Text einfügen</strong>
+            Der Text wird blitzschnell lokal auf Ihrer CPU transkribiert und liegt <strong>sofort in Ihrer Zwischenablage</strong>. Fügen Sie ihn einfach mit <kbd>Strg</kbd> + <kbd>V</kbd> in Ihr Dokument, Ihren Chat oder Ihr Terminal ein!
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <!-- Visuelle Zustände -->
+    <section>
+      <h2>🖼 Die 4 Zustände der Pill</h2>
+      <p>Die Kapsel bleibt in allen Zuständen stets <strong>exakt 420 Pixel breit</strong> und springt nicht auf Ihrem Bildschirm.</p>
+
+      <h3>1. Ruhezustand (Idle)</h3>
+      <div class="state-preview">
+        <img src="assets/state_0_idle.png" alt="Idle Zustand">
+        <div class="state-desc">Die Kapsel wartet am oberen Bildschirmrand auf Ihren Einsatz. 0 % CPU-Last im Standby.</div>
+      </div>
+
+      <h3>2. Aufnahme (Recording)</h3>
+      <div class="state-preview">
+        <img src="assets/state_1_recording.png" alt="Recording Zustand">
+        <div class="state-desc">Mikrofon ist aktiv. Zeigt den Live-Audiopegel und die verstrichene Aufnahmezeit an.</div>
+      </div>
+
+      <h3>3. Fertig & Kopiert (Ready)</h3>
+      <div class="state-preview">
+        <img src="assets/state_2_ready.png" alt="Ready Zustand">
+        <div class="state-desc">Transkription abgeschlossen! Der fertige Text befindet sich bereits in der Zwischenablage.</div>
+      </div>
+
+      <h3>4. Ausgeklappt (Review & Edit)</h3>
+      <div class="state-preview">
+        <img src="assets/state_3_expanded.png" alt="Expanded Zustand">
+        <div class="state-desc">Über <em>[⤢ Details / Edit]</em> öffnet sich der Editor zur Textprüfung oder manuellen Bearbeitung.</div>
+      </div>
+    </section>
+
+    <!-- Tastenkombinationen -->
+    <section>
+      <h2>⌨ Tastenkombinationen</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Aktion</th>
+            <th>Linux (KDE / Wayland)</th>
+            <th>Windows</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Pill ein- / ausblenden</td>
+            <td><kbd>Super</kbd> + <kbd>Strg</kbd> + <kbd>P</kbd></td>
+            <td><kbd>Win</kbd> + <kbd>Strg</kbd> + <kbd>P</kbd></td>
+          </tr>
+          <tr>
+            <td>Text einfügen</td>
+            <td><kbd>Strg</kbd> + <kbd>V</kbd></td>
+            <td><kbd>Strg</kbd> + <kbd>V</kbd></td>
+          </tr>
+          <tr>
+            <td>Pill verschieben</td>
+            <td colspan="2">Linke Maustaste auf die Kapsel gedrückt halten und ziehen (Drag & Drop)</td>
+          </tr>
+          <tr>
+            <td>Kontextmenü öffnen</td>
+            <td colspan="2">Rechtsklick auf die Kapsel oder Rechtsklick auf das Tray-Icon in der Taskleiste</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Hintergrundbetrieb & Beenden -->
+    <section>
+      <h2>⚙ Hintergrundbetrieb & Beenden</h2>
+      <p>whisper-pill läuft unauffällig im Hintergrund und minimiert sich in den System-Tray (Taskleiste).</p>
+
+      <h3>Anwendung beenden:</h3>
+      <ul>
+        <li><strong>Rechtsklick auf die Pill:</strong> Wählen Sie <kbd>⏻ whisper-pill beenden</kbd>.</li>
+        <li><strong>System-Tray-Icon:</strong> Rechtsklick auf das Mikrofonsymbol in der Taskleiste &rarr; <kbd>✕ whisper-pill beenden</kbd>.</li>
+        <li><strong>Im Editor (Ausgeklappt):</strong> Klicken Sie auf den roten Button <kbd>⏻ Beenden</kbd>.</li>
+        <li><strong>Im Terminal / VS Code:</strong> Drücken Sie einfach <kbd>Strg</kbd> + <kbd>C</kbd>.</li>
+      </ul>
+    </section>
+
+    <!-- Datenschutz & Sicherheit -->
+    <section>
+      <h2>🔒 Lokaler Datenschutz</h2>
+      <p><span class="badge badge-success">✔ 100 % Lokal</span> <span class="badge badge-cyan">Zero-Cloud</span></p>
+      <p>Ihre Audiodaten verlassen niemals Ihren Computer. Die Spracherkennung läuft über ein optimiertes CTranslate2-Modell direkt auf Ihrem Hauptprozessor (CPU). Es werden keinerlei Telemetriedaten oder Netzwerkverbindungen aufgebaut.</p>
+    </section>
+
+    <footer>
+      whisper-pill &bull; Freie Open-Source Software unter der MIT-Lizenz.
+    </footer>
+  </div>
+
+</body>
+</html>

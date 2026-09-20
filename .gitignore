@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Audio artifacts & test outputs
+*.wav
+*.mp3
+*.ogg
+prototype/output/
+

@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "whisper-pill (Desktop-Pill starten)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/prototype/main.py",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    }
+  ]
+}
