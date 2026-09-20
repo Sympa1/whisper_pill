@@ -52,12 +52,16 @@ Diese Anweisungen gelten spezifisch für das Repository und die Entwicklung von 
 - Für den Prototypen ein .venv im Verzeichnis prototyp erstellen.
 
 ## Arbeitsweise & Projekt-Journal (`docs/JOURNAL.md`)
+- **Autonome Arbeitsweise & durchgängige Ausführung:**
+  - Logisch aufeinanderfolgende Schritte (z. B. Planen -> Implementieren -> Tests ausführen -> Fehler beheben -> Dokumentieren -> Commit/Push vorbereiten) sind **selbstständig, proaktiv und am Stück** durchzuführen.
+  - Es muss nicht nach jedem einzelnen Zwischenschritt auf Bestätigung gewartet werden.
+  - Bei klaren Anforderungen durcharbeiten und das Gesamtergebnis präsentieren. Nur bei echten Zielkonflikten oder unklaren Anforderungen rückfragen.
 - **Session-Start & Referenzierung (Pflicht):**
   - Lies zu Beginn jeder neuen Sitzung oder vor der Bearbeitung neuer Aufgaben zuerst `docs/JOURNAL.md` ein.
   - Nutze die dort dokumentierten Entscheidungen und offenen Punkte als primäre Referenz für den aktuellen Projektstand.
 - **Ablauf bei Änderungen (Planen -> Umsetzen -> Dokumentieren):**
   1. **Planung:** Vor größeren Änderungen kurz den Lösungsweg skizzieren und erklären.
-  2. **Implementierung:** Tests und Code schrittweise umsetzen.
+  2. **Implementierung:** Tests und Code schrittweise und eigenständig umsetzen.
   3. **Dokumentation:** Nach Abschluss eines Meilensteins das Ergebnis oben in `docs/JOURNAL.md` eintragen.
 
 ## Projektziel, Architektur & Phasen
