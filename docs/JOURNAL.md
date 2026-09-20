@@ -3,6 +3,16 @@
 Dieses Dokument dient als kontinuierliches Gedächtnis des Projekts. 
 Hier werden fundamentale Architekturentscheidungen, erreichte Meilensteine und offene Punkte chronologisch (neueste Einträge oben) dokumentiert.
 
+### 2026-09-20 - Redundanten Symlink AGENT.md entfernt (Konsolidierung auf AGENTS.md)
+- **Entscheidung / Änderung:**
+  - Der redundante Symlink `AGENT.md` wurde entfernt. Die Projekt-Richtlinien verbleiben eindeutig und konsolidiert in der Standarddatei `AGENTS.md`.
+  - Testsuite ausgeführt; alle 19 Tests PASSED.
+- **Betroffene Komponenten:**
+  - `AGENT.md` (gelöscht)
+  - `docs/JOURNAL.md`
+
+---
+
 ### 2026-09-20 - Vollständiger Sicherheits-, Secret- & Privacy-Audit durchgeführt (SECURE)
 - **Entscheidung / Änderung:**
   - Audit nach den Vorgaben des Skills `security-audit` durchgeführt:
