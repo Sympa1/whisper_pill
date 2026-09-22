@@ -3,6 +3,17 @@
 Dieses Dokument dient als kontinuierliches Gedächtnis des Projekts. 
 Hier werden fundamentale Architekturentscheidungen, erreichte Meilensteine und offene Punkte chronologisch (neueste Einträge oben) dokumentiert.
 
+### 2026-09-22 - Hygiene: .idea/ in .gitignore aufgenommen & aus Git-Tracking entfernt
+- **Entscheidung / Änderung:**
+  - Der JetBrains/IntelliJ-Projektordner `.idea/` wurde in `.gitignore` einkommentiert und via `git rm -r --cached .idea` sauber aus der Git-Versionsverwaltung entfernt (Dateien verbleiben lokal auf der Festplatte).
+  - Alle 8 Rust-Tests (`cargo test`) und 19 Python-Tests (`pytest`) erfolgreich PASSED.
+- **Betroffene Komponenten:**
+  - `.gitignore`
+  - `.idea/` (aus Git-Index entfernt)
+  - `docs/JOURNAL.md`
+
+---
+
 ### 2026-09-20 - Phase 2: Shortcut-Verhalten optimiert (Pill ausblenden & Aufnahme beenden via Toggle)
 - **Entscheidung / Änderung:**
   - Auf Nutzeranforderung wurde das Verhalten des globalen Shortcuts (`Super+Strg+P` / `Meta+Ctrl+P`) grundlegend auf einen nahtlosen "Push-to-Dictate & Hide"-Workflow umgestellt:
