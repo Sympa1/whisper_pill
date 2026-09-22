@@ -1,5 +1,4 @@
 """Haupteinstiegspunkt fuer die whisper-pill Prototyp-Anwendung."""
-
 from pathlib import Path
 import sys
 
