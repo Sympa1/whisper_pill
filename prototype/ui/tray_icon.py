@@ -20,7 +20,7 @@ class PillTrayIcon(QSystemTrayIcon):
 
         # Dynamisches Icon mit abgerundeter Kapsel und Mikrofon zeichnen
         self.setIcon(self._create_tray_icon())
-        self.setToolTip("whisper-pill (Super+Strg+P)")
+        self.setToolTip("Whisper Pill (Super+Strg+P)")
 
         self._setup_menu()
 
@@ -68,7 +68,7 @@ class PillTrayIcon(QSystemTrayIcon):
         menu.addSeparator()
 
         # Aktion: Vollstaendig beenden
-        action_quit: QAction = QAction("✕ whisper-pill beenden", menu)
+        action_quit: QAction = QAction("✕ Whisper Pill beenden", menu)
         action_quit.triggered.connect(self._quit_application)
         menu.addAction(action_quit)
 

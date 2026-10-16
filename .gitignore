@@ -223,3 +223,29 @@ __marimo__/
 *.ogg
 prototype/output/
 
+# Rust Build-Artefakte & Caches
+target/
+app/target/
+**/*.rs.bk
+*.rlib
+*.rmeta
+
+# Whisper Pill Packaging & AppImage
+dist/
+*.AppImage
+packaging/AppDir/
+packaging/whisper-pill_*.png
+
+# Whisper KI-Modelle & Caches (Zero-Track)
+*.bin
+ggml-*.bin
+models/
+*.onnx
+
+# Lokale Diagnose- & Fehlerlogs
+error.log
+*.log
+
+# Lokale Cache-Verzeichnisse
+.cache/
+

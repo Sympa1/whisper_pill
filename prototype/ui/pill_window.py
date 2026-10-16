@@ -153,7 +153,7 @@ class PillWindow(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(12)
 
-        icon_label: QLabel = QLabel("🎙 whisper-pill")
+        icon_label: QLabel = QLabel("🎙 Whisper Pill")
         icon_label.setObjectName("PillTitle")
 
         self._btn_start_record: QPushButton = QPushButton("● Aufnehmen")
@@ -253,7 +253,7 @@ class PillWindow(QWidget):
         btn_quit: QPushButton = QPushButton("⏻ Beenden")
         btn_quit.setObjectName("QuitButton")
         btn_quit.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_quit.setToolTip("whisper-pill vollstaendig beenden")
+        btn_quit.setToolTip("Whisper Pill vollstaendig beenden")
         btn_quit.clicked.connect(self.quit_application)
 
         btn_recopy: QPushButton = QPushButton("⎘ Text kopieren")
@@ -571,7 +571,7 @@ class PillWindow(QWidget):
 
         menu.addSeparator()
 
-        action_quit: QAction = QAction("⏻ whisper-pill beenden", menu)
+        action_quit: QAction = QAction("⏻ Whisper Pill beenden", menu)
         action_quit.triggered.connect(self.quit_application)
         menu.addAction(action_quit)
 

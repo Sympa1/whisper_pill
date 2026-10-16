@@ -2,6 +2,7 @@
 
 pub mod audio;
 pub mod config;
+pub mod logging;
 pub mod platform;
 pub mod state;
 pub mod transcription;

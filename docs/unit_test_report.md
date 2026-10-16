@@ -1,10 +1,10 @@
 # test-core System-Testbericht: whisper-pill
 
 - **Datum & Uhrzeit:** 2026-09-20 08:10:00
-- **Plattform:** Linux (Manjaro Linux rolling / Kernel 6.x)
+- **Plattform:** Linux
 - **Komponenten:**
-  - Audio-Ingest & AudioRecorder (`prototype/audio/recorder.py`)
-  - WhisperTranscriber & Clipboard (`prototype/utils/transcriber.py`)
+  - Audio-Ingest & AudioRecorder
+  - WhisperTranscriber & Clipboard
 - **Gesamtergebnis:** PASSED (8/8 Tests erfolgreich)
 
 ## 1. Ausgefuehrte Test-Suiten

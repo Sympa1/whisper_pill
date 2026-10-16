@@ -13,14 +13,16 @@ Führe bei Aktivierung folgende Schritte headless aus:
   pytest tests/test_audio.py tests/test_transcribe.py tests/test_config.py -v --tb=short --durations=5
   
 ## 2. Dokumentations-Bericht generieren
-Erstelle oder aktualisiere nach jedem Durchlauf zwingend die Datei `docs/e2e_test_report.md` nach folgendem Standard:
+Erstelle oder aktualisiere nach jedem Durchlauf zwingend die Datei `docs/unit_test_report.md` nach folgendem Standard.
+
+> **Wichtig (Datenschutz & Public-Repo-Konformität):** In den Berichten dürfen **keine Dateipfade** (weder absolute Systempfade noch Quellcodepfade) aufgeführt werden. Verwende stattdessen ausschließlich sprechende Modul- und Komponentennamen.
 
 ```markdown
 # test-core System-Testbericht: whisper-pill
 
 - **Datum & Uhrzeit:** [Aktueller Timestamp]
 - **Plattform:** [Linux / Windows]
-- **Modell:** Whisper [base / small]
+- **Komponenten:** [Komponentenübersicht ohne Dateipfade]
 - **Gesamtergebnis:** [PASSED / FAILED]
 
 ## Testschritte & Latenzen

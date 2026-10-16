@@ -70,7 +70,7 @@ impl HotkeyManager {
                 "/kglobalaccel",
                 "--method",
                 "org.kde.KGlobalAccel.doRegister",
-                "['whisper_pill', 'toggle_pill', 'whisper-pill', 'Pill ein-/ausblenden']",
+                "['whisper_pill', 'toggle_pill', 'Whisper Pill', 'Pill ein-/ausblenden']",
             ])
             .output();
 
@@ -85,7 +85,7 @@ impl HotkeyManager {
                 "/kglobalaccel",
                 "--method",
                 "org.kde.KGlobalAccel.setShortcut",
-                "['whisper_pill', 'toggle_pill', 'whisper-pill', 'Pill ein-/ausblenden']",
+                "['whisper_pill', 'toggle_pill', 'Whisper Pill', 'Pill ein-/ausblenden']",
                 "[335544400]",
                 "uint32 2",
             ])
@@ -131,13 +131,14 @@ impl HotkeyManager {
             }
         };
 
-        // Match-Rule fuer KDE KGlobalAccel Shortcut-Signale
-        let rule_builder = MatchRule::builder().msg_type(zbus::message::Type::Signal);
+        // Match-Rule fuer KDE KGlobalAccel Shortcut-Signale spezifisch fuer whisper_pill
+        let rule_builder = MatchRule::builder()
+            .msg_type(zbus::message::Type::Signal)
+            .path("/component/whisper_pill")
+            .and_then(|b| b.interface("org.kde.kglobalaccel.Component"))
+            .and_then(|b| b.member("globalShortcutPressed"));
 
-        let rule = match rule_builder
-            .interface("org.kde.kglobalaccel.Component")
-            .and_then(|b| b.member("globalShortcutPressed"))
-        {
+        let rule = match rule_builder {
             Ok(b) => b.build(),
             Err(e) => {
                 eprintln!("Konnte D-Bus Match-Rule nicht konfigurieren: {}", e);
@@ -153,14 +154,58 @@ impl HotkeyManager {
             }
         };
 
-        while let Some(_msg) = stream.next().await {
-            // Signal erhalten: Hotkey ausloesen
-            let _ = sender.send(HotkeyTriggeredEvent);
+        while let Some(Ok(msg)) = stream.next().await {
+            // Signal validieren: Gehoert dieses Signal exakt zu whisper_pill und toggle_pill?
+            // Verhindert, dass fremde Shortcuts (z. B. F12 fuer Yakuake oder Super-Taste) die Pill triggern.
+            let mut b_is_our_hotkey = false;
+
+            if let Ok((s_buffy_comp, s_buffy_action, _i_buffy_time)) = msg.body().deserialize::<(&str, &str, i64)>() {
+                if Self::is_whisper_pill_shortcut(s_buffy_comp, s_buffy_action) {
+                    b_is_our_hotkey = true;
+                }
+            } else if let Some(path) = msg.header().path() {
+                // Fallback: Pfad-Pruefung
+                if path.as_str() == "/component/whisper_pill" {
+                    b_is_our_hotkey = true;
+                }
+            }
+
+            if b_is_our_hotkey {
+                let _ = sender.send(HotkeyTriggeredEvent);
+            }
         }
+    }
+
+    /// Prueft, ob ein empfangener Hotkey-Aufruf exakt zu Whisper Pill gehoert.
+    pub fn is_whisper_pill_shortcut(component: &str, action: &str) -> bool {
+        component == "whisper_pill" && action == "toggle_pill"
     }
 
     /// Erlaubt das manuelle Ausloesen des Hotkeys (z. B. fuer Tests oder UI-Buttons).
     pub fn trigger_manually(&self) {
         let _ = self.sender.send(HotkeyTriggeredEvent);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_whisper_pill_shortcut() {
+        assert!(HotkeyManager::is_whisper_pill_shortcut("whisper_pill", "toggle_pill"));
+        // Fremde Shortcuts (z. B. Yakuake F12 oder KRunner/Super-Taste) duerfen nicht akzeptiert werden
+        assert!(!HotkeyManager::is_whisper_pill_shortcut("yakuake", "toggle_window"));
+        assert!(!HotkeyManager::is_whisper_pill_shortcut("krunner", "run_command"));
+        assert!(!HotkeyManager::is_whisper_pill_shortcut("plasmashell", "activate_widget"));
+        assert!(!HotkeyManager::is_whisper_pill_shortcut("whisper_pill", "unknown_action"));
+    }
+
+    #[test]
+    fn test_manual_trigger() {
+        let (tx, rx) = crossbeam_channel::unbounded();
+        let mgr = HotkeyManager::new(tx);
+        mgr.trigger_manually();
+        assert_eq!(rx.try_recv(), Ok(HotkeyTriggeredEvent));
     }
 }

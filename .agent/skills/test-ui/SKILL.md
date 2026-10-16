@@ -11,30 +11,31 @@ Führe diesen Workflow aus, um die grafische PySide6-Benutzeroberfläche, Fenste
 * Führe PyTest auf den UI-Tests (unter Nutzung von `pytest-qt` bzw. `QTest`) aus:
   ```bash
   pytest tests/test_ui.py -v --tb=short
-  
+  ```
+
 ## 2. Dokumentations-Bericht generieren
-Erstelle oder aktualisiere nach jedem Durchlauf zwingend die Datei `docs/e2e_test_report.md` nach folgendem Standard:
+Erstelle oder aktualisiere nach jedem Durchlauf zwingend die Datei `docs/ui_test_report.md` nach folgendem Standard.
+
+> **Wichtig (Datenschutz & Public-Repo-Konformität):** In den Berichten dürfen **keine Dateipfade** aufgeführt werden. Verwende ausschließlich Komponenten- und Testnamen.
 
 ```markdown
-# test-core System-Testbericht: whisper-pill
+# UI & State Machine Testbericht: whisper-pill
 
 - **Datum & Uhrzeit:** [Aktueller Timestamp]
 - **Plattform:** [Linux / Windows]
-- **Modell:** Whisper [base / small]
+- **Komponente:** Pill-UI (PillWindow, WaveformWidget)
 - **Gesamtergebnis:** [PASSED / FAILED]
 
-## Testschritte & Latenzen
-| Schritt | Komponente | Status | Dauer (ms) |
-| :--- | :--- | :--- | :--- |
-| 1. Audio-Ingest | sounddevice / numpy | OK / FAIL | ... |
-| 2. Lokale Transkription | faster-whisper | OK / FAIL | ... |
-| 3. Zwischenablage | pyperclip | OK / FAIL | ... |
-| 4. UI-Statuswechsel | PySide6 Pill | OK / FAIL | ... |
+## 1. Ausgefuehrte UI-Test-Suiten
+| Test | Status | Beschreibung |
+| :--- | :--- | :--- |
+| `test_waveform_widget_levels` | PASSED | Animierte Lautstaerke-Balken |
+| `test_pill_window_flags_and_initial_state` | PASSED | Fensterattribute (Frameless, Always-On-Top, Transparenz, IDLE) |
+| `test_pill_window_state_transitions` | PASSED | State-Machine (IDLE -> REC -> PROCESSING -> READY -> EXPANDED -> IDLE) |
+| `test_pill_recopy_edited_text` | PASSED | Text-Kopieren aus Editor |
 
-## Transkriptions-Genauigkeit
-- **Referenz-Text:** "..."
-- **Erkannter Text:** "..."
-- **Match-Rate / WER:** ... %
-
-## Fazit & Fehleranalyse
-[Detaillierte Fehlermeldungen oder Bestätigung der fehlerfreien Pipeline]
+## 2. Zusammenfassung
+- **Test-Modus:** Headless via `QT_QPA_PLATFORM=offscreen`.
+- **Zustandsmaschine:** Alle Übergänge arbeiten sauber mit Signalen und Slots.
+- **Fazit:** [Zusammenfassung und Ergebnis]
+```

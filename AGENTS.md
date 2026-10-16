@@ -53,6 +53,11 @@ Diese Anweisungen gelten spezifisch für das Repository und die Entwicklung von 
 - **Rückfragepflicht außerhalb:** Eine vorherige Rückfrage ist nur dann erforderlich, wenn Aktionen außerhalb des Projektverzeichnisses stattfinden sollen (z. B. systemweite Installationen oder globale OS-Dateien außerhalb des Workspaces).
 - Für den Prototypen ein .venv im Verzeichnis `prototype` verwenden.
 
+## Berichts- & Dokumentations-Datenschutz (Public-Repo-Konformität)
+- **Strikter Ausschluss von Dateipfaden in Berichten:**
+  - In allen generierten Test- und Audit-Berichten (`docs/*_report.md`), Dokumentationen und Plänen dürfen **keine absoluten Dateipfade** (wie `/home/...` oder `C:\Users\...`), Benutzernamen oder interne Quellcode-Dateipfade aufgeführt werden.
+  - Verwende in Berichten und Tabellen ausschließlich sprechende Modul- und Komponentennamen (z. B. `AudioRecorder`, `TranscriptionEngine`, `HotkeyPlatform`, `Pill-UI`) oder relative Verweise ohne sensible Pfadinformationen.
+
 ## Arbeitsweise, Test-Zwang & Projekt-Journal (`docs/JOURNAL.md`)
 - **Autonome Arbeitsweise & durchgängige Ausführung:**
   - Logisch aufeinanderfolgende Schritte (Planen -> Implementieren -> Tests ausführen -> Fehler beheben -> Dokumentieren -> Commit/Push vorbereiten) sind **selbstständig, proaktiv und am Stück** durchzuführen.

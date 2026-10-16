@@ -3,19 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>whisper-pill – Benutzerhandbuch</title>
+  <title>Whisper Pill – Benutzerhandbuch</title>
   <style>
     :root {
-      --bg-main: #0F0F12;
-      --bg-card: #18181B;
-      --bg-pill: #222226;
+      --bg-main: #09090b;
+      --bg-card: #18181b;
+      --bg-pill: #27272a;
       --border-color: rgba(255, 255, 255, 0.12);
-      --text-main: #F4F4F5;
-      --text-muted: #A1A1AA;
-      --accent-cyan: #38BDF8;
-      --accent-green: #22C55E;
-      --accent-red: #EF4444;
-      --kbd-bg: #27272A;
+      --text-main: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --accent-cyan: #38bdf8;
+      --accent-green: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --kbd-bg: #27272a;
     }
 
     * {
@@ -33,7 +34,7 @@
     }
 
     .container {
-      max-width: 860px;
+      max-width: 880px;
       margin: 0 auto;
     }
 
@@ -46,7 +47,7 @@
 
     .pill-logo {
       display: inline-block;
-      background: #18181B;
+      background: #18181b;
       border: 1px solid var(--accent-cyan);
       border-radius: 24px;
       padding: 8px 24px;
@@ -72,302 +73,276 @@
       font-size: 1.1rem;
     }
 
-    section {
-      background-color: var(--bg-card);
-      border: 1px solid var(--border-color);
-      border-radius: 16px;
-      padding: 32px;
-      margin-bottom: 32px;
-    }
-
     h2 {
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       font-weight: 700;
-      margin-bottom: 20px;
+      color: var(--text-main);
+      margin: 36px 0 16px 0;
       display: flex;
       align-items: center;
       gap: 10px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      padding-bottom: 12px;
     }
 
-    h3 {
-      font-size: 1.2rem;
-      font-weight: 600;
-      margin: 24px 0 12px 0;
-      color: var(--accent-cyan);
+    h2::before {
+      content: "";
+      display: inline-block;
+      width: 4px;
+      height: 20px;
+      background: var(--accent-cyan);
+      border-radius: 2px;
     }
 
-    p {
+    p, ul, ol {
       margin-bottom: 16px;
-      color: #D4D4D8;
-    }
-
-    kbd {
-      background-color: var(--kbd-bg);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-bottom: 2px solid rgba(255, 255, 255, 0.3);
-      border-radius: 6px;
-      padding: 2px 8px;
-      font-family: monospace;
-      font-size: 0.9em;
-      color: #FAFAFA;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-    }
-
-    .state-preview {
-      background-color: #09090B;
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 24px;
-      margin: 20px 0;
-      text-align: center;
-    }
-
-    .state-preview img {
-      max-width: 100%;
-      height: auto;
-      border-radius: 8px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-    }
-
-    .state-desc {
-      margin-top: 14px;
-      font-size: 0.95rem;
       color: var(--text-muted);
     }
 
-    .step-list {
-      list-style: none;
-      counter-reset: steps;
-      margin: 20px 0;
+    ul, ol {
+      padding-left: 24px;
     }
 
-    .step-list li {
-      counter-increment: steps;
-      display: flex;
-      align-items: flex-start;
-      margin-bottom: 20px;
+    li {
+      margin-bottom: 8px;
+    }
+
+    li strong {
+      color: var(--text-main);
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 16px;
+      margin-bottom: 24px;
     }
 
-    .step-list li::before {
-      content: counter(steps);
-      background-color: var(--accent-cyan);
-      color: #09090B;
-      font-weight: 800;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
+    .state-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .state-header {
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      margin-top: 2px;
+      gap: 8px;
     }
 
-    .step-content {
-      flex: 1;
+    .badge {
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 600;
     }
 
-    .step-content strong {
-      display: block;
-      color: #FAFAFA;
-      margin-bottom: 4px;
+    .badge-rec { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+    .badge-trans { background: rgba(245, 158, 11, 0.2); color: var(--accent-amber); }
+    .badge-ready { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+    .badge-idle { background: rgba(56, 189, 248, 0.2); color: var(--accent-cyan); }
+
+    kbd {
+      background: var(--kbd-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      color: var(--text-main);
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.4);
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 20px 0;
+      margin-bottom: 24px;
     }
 
     th, td {
       text-align: left;
       padding: 12px 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: 1px solid var(--border-color);
     }
 
     th {
-      color: var(--text-muted);
-      font-size: 0.85rem;
+      background: #121215;
+      color: var(--text-main);
+      font-size: 0.9rem;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
     }
 
-    .badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 600;
+    td {
+      color: var(--text-muted);
     }
 
-    .badge-success {
-      background: rgba(34, 197, 94, 0.15);
-      color: var(--accent-green);
-      border: 1px solid rgba(34, 197, 94, 0.3);
+    td strong {
+      color: var(--text-main);
     }
 
-    .badge-cyan {
-      background: rgba(56, 189, 248, 0.15);
+    code {
+      background: #121215;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.9rem;
       color: var(--accent-cyan);
-      border: 1px solid rgba(56, 189, 248, 0.3);
     }
 
     .callout {
-      background: rgba(56, 189, 248, 0.08);
       border-left: 4px solid var(--accent-cyan);
-      border-radius: 0 8px 8px 0;
+      background: rgba(56, 189, 248, 0.08);
       padding: 16px 20px;
-      margin: 20px 0;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 24px;
+    }
+
+    .callout-title {
+      font-weight: 700;
+      color: var(--accent-cyan);
+      margin-bottom: 4px;
     }
 
     footer {
       text-align: center;
+      margin-top: 60px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-color);
       color: var(--text-muted);
-      font-size: 0.9rem;
-      margin-top: 40px;
+      font-size: 0.85rem;
     }
   </style>
 </head>
 <body>
-
   <div class="container">
     <header>
-      <div class="pill-logo">🎙 <span>whisper</span>-pill</div>
+      <div class="pill-logo">Whisper <span>Pill</span></div>
       <h1>Benutzerhandbuch</h1>
-      <p class="subtitle">Schlankes, schwebendes Desktop-Diktier-Utility für Linux & Windows</p>
+      <p class="subtitle">Schlankes, minimalistisches Desktop-Diktier-Utility (100 % lokal & datenschutzfokussiert)</p>
     </header>
 
-    <!-- Schnellstart -->
-    <section>
-      <h2>⚡ Schnellstart & Bedienung</h2>
-      <p>Mit <strong>whisper-pill</strong> diktieren Sie gesprochenen Text direkt in jede beliebige Anwendung – ohne Cloud, ohne Latenz und 100 % lokal.</p>
-
+    <h2>1. Schnellstart</h2>
+    <div class="card">
+      <p>Whisper Pill kann direkt als autarkes, vorkompiliertes <strong>Linux-AppImage</strong> ohne Installation gestartet werden:</p>
       <div class="callout">
-        <strong>Globaler Shortcut zum Ein- und Ausblenden:</strong><br>
-        Unter Linux: <kbd>Super</kbd> + <kbd>Strg</kbd> + <kbd>P</kbd><br>
-        Unter Windows: <kbd>Win</kbd> + <kbd>Strg</kbd> + <kbd>P</kbd>
+        <div class="callout-title">AppImage Ausführen</div>
+        <code>./dist/Whisper_Pill-x86_64.AppImage</code>
+      </div>
+      <p>Beim Start platziert sich Whisper Pill unaufdringlich im System-Tray (Benachrichtigungsbereich deiner Taskleiste) und wartet im Hintergrund auf deinen Tastendruck.</p>
+    </div>
+
+    <h2>2. Die Benutzeroberfläche & Zustände</h2>
+    <p>Die schwebende Kapsel („Pill“) passt sich dynamisch deinen Eingaben an:</p>
+    
+    <div class="card-grid">
+      <div class="state-card">
+        <div class="state-header">
+          <span>Aufnahme</span>
+          <span class="badge badge-rec">● REC</span>
+        </div>
+        <p>Aktiviert per globalem Hotkey. Zeigt Live-Lautstärkepegel und Aufnahmezeit. Sprich deinen Text einfach frei heraus.</p>
       </div>
 
-      <ol class="step-list">
-        <li>
-          <div class="step-content">
-            <strong>1. Aufnahme starten</strong>
-            Drücken Sie den globalen Shortcut oder klicken Sie auf der Pill auf <kbd>● Aufnehmen</kbd>.
-          </div>
-        </li>
-        <li>
-          <div class="step-content">
-            <strong>2. Text sprechen</strong>
-            Sprechen Sie normal ins Mikrofon. Die animierte Wellenform visualisiert Ihre Stimme in Echtzeit.
-          </div>
-        </li>
-        <li>
-          <div class="step-content">
-            <strong>3. Aufnahme stoppen</strong>
-            Drücken Sie erneut den Shortcut oder klicken Sie auf <kbd>■ Stop</kbd>.
-          </div>
-        </li>
-        <li>
-          <div class="step-content">
-            <strong>4. Text einfügen</strong>
-            Der Text wird blitzschnell lokal auf Ihrer CPU transkribiert und liegt <strong>sofort in Ihrer Zwischenablage</strong>. Fügen Sie ihn einfach mit <kbd>Strg</kbd> + <kbd>V</kbd> in Ihr Dokument, Ihren Chat oder Ihr Terminal ein!
-          </div>
-        </li>
-      </ol>
-    </section>
-
-    <!-- Visuelle Zustände -->
-    <section>
-      <h2>🖼 Die 4 Zustände der Pill</h2>
-      <p>Die Kapsel bleibt in allen Zuständen stets <strong>exakt 420 Pixel breit</strong> und springt nicht auf Ihrem Bildschirm.</p>
-
-      <h3>1. Ruhezustand (Idle)</h3>
-      <div class="state-preview">
-        <img src="assets/state_0_idle.png" alt="Idle Zustand">
-        <div class="state-desc">Die Kapsel wartet am oberen Bildschirmrand auf Ihren Einsatz. 0 % CPU-Last im Standby.</div>
+      <div class="state-card">
+        <div class="state-header">
+          <span>Transkription</span>
+          <span class="badge badge-trans">⏳ Transkribiert</span>
+        </div>
+        <p>Die Whisper-KI verarbeitet die Sprache auf deiner CPU. Das Tray-Icon signalisiert dies mit bernsteinfarbenen Wellen.</p>
       </div>
 
-      <h3>2. Aufnahme (Recording)</h3>
-      <div class="state-preview">
-        <img src="assets/state_1_recording.png" alt="Recording Zustand">
-        <div class="state-desc">Mikrofon ist aktiv. Zeigt den Live-Audiopegel und die verstrichene Aufnahmezeit an.</div>
+      <div class="state-card">
+        <div class="state-header">
+          <span>Bereit & Kopiert</span>
+          <span class="badge badge-ready">✔ Bereit</span>
+        </div>
+        <p>Der fertige Text liegt direkt in deiner Zwischenablage. Drücke <kbd>Strg</kbd>+<kbd>V</kbd> zum Einfügen.</p>
       </div>
 
-      <h3>3. Fertig & Kopiert (Ready)</h3>
-      <div class="state-preview">
-        <img src="assets/state_2_ready.png" alt="Ready Zustand">
-        <div class="state-desc">Transkription abgeschlossen! Der fertige Text befindet sich bereits in der Zwischenablage.</div>
+      <div class="state-card">
+        <div class="state-header">
+          <span>Editor & Review</span>
+          <span class="badge badge-idle">⤢ Details</span>
+        </div>
+        <p>Klick auf Details klappt das Textfeld auf. Hier kannst du Texte prüfen, manuell bearbeiten oder archivieren.</p>
       </div>
+    </div>
 
-      <h3>4. Ausgeklappt (Review & Edit)</h3>
-      <div class="state-preview">
-        <img src="assets/state_3_expanded.png" alt="Expanded Zustand">
-        <div class="state-desc">Über <em>[⤢ Details / Edit]</em> öffnet sich der Editor zur Textprüfung oder manuellen Bearbeitung.</div>
-      </div>
-    </section>
-
-    <!-- Tastenkombinationen -->
-    <section>
-      <h2>⌨ Tastenkombinationen</h2>
+    <h2>3. Tastenkürzel & Bedienung</h2>
+    <div class="card">
       <table>
         <thead>
           <tr>
             <th>Aktion</th>
-            <th>Linux (KDE / Wayland)</th>
-            <th>Windows</th>
+            <th>Tastenkombination / Geste</th>
+            <th>Beschreibung</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>Pill ein- / ausblenden</td>
+            <td><strong>Aufnahme starten / stoppen</strong></td>
             <td><kbd>Super</kbd> + <kbd>Strg</kbd> + <kbd>P</kbd></td>
-            <td><kbd>Win</kbd> + <kbd>Strg</kbd> + <kbd>P</kbd></td>
+            <td>Aktiviert oder beendet die Sprachaufnahme von überall aus.</td>
           </tr>
           <tr>
-            <td>Text einfügen</td>
+            <td><strong>Text einfügen</strong></td>
             <td><kbd>Strg</kbd> + <kbd>V</kbd></td>
-            <td><kbd>Strg</kbd> + <kbd>V</kbd></td>
+            <td>Fügt das fertige Diktat in jedes beliebige Programm ein.</td>
           </tr>
           <tr>
-            <td>Pill verschieben</td>
-            <td colspan="2">Linke Maustaste auf die Kapsel gedrückt halten und ziehen (Drag & Drop)</td>
+            <td><strong>Pill verschieben</strong></td>
+            <td>Linke Maustaste gedrückt halten</td>
+            <td>Freies Drag & Drop; die Position wird automatisch gespeichert.</td>
           </tr>
           <tr>
-            <td>Kontextmenü öffnen</td>
-            <td colspan="2">Rechtsklick auf die Kapsel oder Rechtsklick auf das Tray-Icon in der Taskleiste</td>
+            <td><strong>Kontextmenü</strong></td>
+            <td>Rechtsklick auf Tray-Icon</td>
+            <td>Schnellzugriff auf Aufnahme, Einstellungen und Fehlerlog.</td>
+          </tr>
+          <tr>
+            <td><strong>Pill ausblenden</strong></td>
+            <td>Klick auf <kbd>✕</kbd> oder <kbd>Esc</kbd></td>
+            <td>Minimiert die Kapsel zurück in den System-Tray.</td>
           </tr>
         </tbody>
       </table>
-    </section>
+    </div>
 
-    <!-- Hintergrundbetrieb & Beenden -->
-    <section>
-      <h2>⚙ Hintergrundbetrieb & Beenden</h2>
-      <p>whisper-pill läuft unauffällig im Hintergrund und minimiert sich in den System-Tray (Taskleiste).</p>
-
-      <h3>Anwendung beenden:</h3>
+    <h2>4. Einstellungen anpassen</h2>
+    <div class="card">
+      <p>Über das Tray-Kontextmenü (Rechtsklick auf das Mikrofonsymbol &rarr; <em>Einstellungen...</em>) öffnest du das Konfigurationsmenü:</p>
       <ul>
-        <li><strong>Rechtsklick auf die Pill:</strong> Wählen Sie <kbd>⏻ whisper-pill beenden</kbd>.</li>
-        <li><strong>System-Tray-Icon:</strong> Rechtsklick auf das Mikrofonsymbol in der Taskleiste &rarr; <kbd>✕ whisper-pill beenden</kbd>.</li>
-        <li><strong>Im Editor (Ausgeklappt):</strong> Klicken Sie auf den roten Button <kbd>⏻ Beenden</kbd>.</li>
-        <li><strong>Im Terminal / VS Code:</strong> Drücken Sie einfach <kbd>Strg</kbd> + <kbd>C</kbd>.</li>
+        <li><strong>Whisper-Modell wählen:</strong> Wähle zwischen dem schnellen <code>base</code>-Modell (geringster RAM-Bedarf) und dem hochpräzisen <code>small</code>-Modell für anspruchsvolle Fachbegriffe.</li>
+        <li><strong>Suchstrategie (Beam Search):</strong> Aktiviere <em>Beam Search (5 Beams)</em> für maximale Genauigkeit bei komplexen Sätzen oder nutze <em>Greedy Search</em> für minimale Latenz.</li>
+        <li><strong>Automatische Lautstärkeanpassung (Gain):</strong> Normalisiert leise Mikrofonsignale automatisch für verlässliche Transkriptionen.</li>
+        <li><strong>Mit dem System starten (Autostart):</strong> Startet Whisper Pill beim Hochfahren deines Computers automatisch im Hintergrund.</li>
       </ul>
-    </section>
+    </div>
 
-    <!-- Datenschutz & Sicherheit -->
-    <section>
-      <h2>🔒 Lokaler Datenschutz</h2>
-      <p><span class="badge badge-success">✔ 100 % Lokal</span> <span class="badge badge-cyan">Zero-Cloud</span></p>
-      <p>Ihre Audiodaten verlassen niemals Ihren Computer. Die Spracherkennung läuft über ein optimiertes CTranslate2-Modell direkt auf Ihrem Hauptprozessor (CPU). Es werden keinerlei Telemetriedaten oder Netzwerkverbindungen aufgebaut.</p>
-    </section>
+    <h2>5. Fehleranalyse & Diagnose</h2>
+    <div class="card">
+      <p>Sollte ein Mikrofon nicht erkannt werden oder ein KI-Modell fehlen, protokolliert Whisper Pill alle Details strukturiert:</p>
+      <ul>
+        <li>Klicke mit der rechten Maustaste auf das System-Tray-Icon.</li>
+        <li>Wähle <strong>Fehlerlog anzeigen...</strong>.</li>
+        <li>Das Log öffnet sich sofort in deinem bevorzugten Standard-Texteditor.</li>
+      </ul>
+    </div>
 
     <footer>
-      whisper-pill &bull; Freie Open-Source Software unter der MIT-Lizenz.
+      <p>&copy; 2026 Whisper Pill – Veröffentlicht unter der MIT-Lizenz. 100 % lokale Open-Source Desktop-Software.</p>
     </footer>
   </div>
-
 </body>
 </html>

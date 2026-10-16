@@ -24,3 +24,4 @@ Führe bei Aktivierung dieses Skills folgende Schritte aus:
   * Keine externen `<link>`- oder `<script>`-Tags zu Drittanbietern.
   * Korrekte responsive Darstellung für Desktop-Browser.
   * Lokale relative Pfade zu allen Assets.
+  * Keine absoluten Dateipfade oder Benutzernamen im generierten HTML.

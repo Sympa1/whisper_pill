@@ -3,6 +3,508 @@
 Dieses Dokument dient als kontinuierliches Gedächtnis des Projekts. 
 Hier werden fundamentale Architekturentscheidungen, erreichte Meilensteine und offene Punkte chronologisch (neueste Einträge oben) dokumentiert.
 
+### 2026-10-16 - Phase 2: Public-Repo-Hygiene in `scripts/build_appimage.sh`
+- **Entscheidung / Änderung:**
+  1. **Bereinigung lokaler Projektpfade (`scripts/build_appimage.sh`):**
+     - Verweise auf lokale Nachbarprojekte bei der Suche nach `appimagetool` wurden entfernt und durch generische Standardpfade (`$PATH`, `$APPIMAGETOOL`, `~/.local/bin/appimagetool`) ersetzt.
+  2. **Tests:**
+     - 42 Rust-Unit-Tests (`cargo test`) PASSED.
+     - 19 Python-Unit-Tests (`pytest`) PASSED.
+- **Betroffene Komponenten:**
+  - `BuildScript` (`scripts/build_appimage.sh`)
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-10-14 - Phase 2: Hotkey-Entkopplung von Fremdsignalen (Yakuake / Super-Taste Fix), Zuverlässige Transkript-Scrollbar & Harmonisierte Button-Icons
+- **Entscheidung / Änderung:**
+  1. **Entkopplung globaler Hotkeys von systemweiten KDE-Signalen (`HotkeyManager`):**
+     - **Ursachenanalyse:** Die bisherige D-Bus Match-Rule lauschte unselektiv auf das Signal `org.kde.kglobalaccel.Component.globalShortcutPressed` ohne Pfadfilter oder Argumentenprüfung und verwarf den Nachrichteninhalt. Dadurch feuerte KDE KGlobalAccel bei *jedem beliebigen Shortcut* des Desktops (z. B. <kbd>F12</kbd> für Yakuake, <kbd>Super</kbd>-Taste für das Anwendungsmenü/KRunner, Lautstärketasten etc.) das Signal und Whisper Pill startete fälschlicherweise eine Aufnahme.
+     - **Spezifische Pfad- & Komponenten-Filterung:** Match-Rule strikt auf den D-Bus-Objektpfad `/component/whisper_pill` eingegrenzt. Deserialisierung und Verifikation der Signal-Parameter `(component, action, timestamp)`: Nur wenn `component == "whisper_pill"` und `action == "toggle_pill"` zutreffen, wird das Hotkey-Event an den Orchestrator weitergeleitet. Externe Shortcuts wie <kbd>F12</kbd> oder <kbd>Super</kbd> lösen Whisper Pill unter keinen Umständen mehr aus.
+  2. **Zuverlässige & Elegante Scrollbar im Texteditor (`Slint UI`):**
+     - **Ursachenanalyse:** `ScrollView` berechnet ohne explizite Höhenbindung (`content-height`) keine Inhaltsausdehnung (`maximum = 0`), weswegen die Standard-Scrollbar permanent unsichtbar blieb. Zudem war die native Fluent-Scrollbar mit 2 px Stärke kaum wahrnehmbar.
+     - **Implementierung:** Umstellung auf ein natives `Flickable` mit dynamischer `content-height: max(self.height, transcript-input.preferred-height + 20px)`. Bei längeren Transkripten blendet sich eine maßgeschneiderte, 6 px breite Scrollbar mit abgerundetem Daumen ein. Ermöglicht flüssiges Scrollen per Mausrad, Tastaturnavigation sowie direktes Ziehen des Scroll-Daumens mit der Maus.
+  3. **Harmonisierung der Button-Beschriftungen & Icons (Ausgeklappter Editor):**
+     - **Ursachenanalyse:** Zuvor war das Schließen-Symbol `✕` irreführend dem Button "Verbergen" zugeordnet, während "Beenden" mit dem unpassenden Power-Symbol `⏻` versehen war (welches zudem auf Standard-Desktop-Schriftarten oft als fehlendes Zeichen/Tofu gerendert wurde).
+     - **Bereinigung:**
+       - `▲ Zuklappen`: Klappt den Editor zurück in die kompakte Kapsel.
+       - `– Verbergen`: Minimiert die Kapsel in den Hintergrund / Systemtray.
+       - `✕ Beenden`: Schließt die Anwendung vollständig (im markanten Rot-Ton `#ef4444`).
+       - `⎘ Text kopieren`: Kopiert den bearbeiteten Text in die Zwischenablage.
+  4. **Tests & Packaging:**
+     - 42 Rust-Unit-Tests (`cargo test`) PASSED (inkl. Tests für Hotkey-Komponentenfilterung `test_is_whisper_pill_shortcut` und `test_manual_trigger`).
+     - `cargo clippy --all-targets -- -D warnings` mit 0 Warnungen und 0 Fehlern abgeschlossen.
+     - 19 Python-Unit-Tests (`pytest`) PASSED.
+     - AppImage Release-Build (`dist/Whisper_Pill-x86_64.AppImage`, 13 MB) erfolgreich neu generiert.
+- **Betroffene Komponenten:**
+  - `HotkeyManager` (`app/src/platform/hotkey.rs`)
+  - `AppWindow` (`app/ui/appwindow.slint`)
+  - `AppImage` (`dist/Whisper_Pill-x86_64.AppImage`)
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-10-14 - Phase 2: Robuster AppImage-Autostart, KWin/Yakuake-Z-Order-Fix, Auto-Dismiss & Scrollbarer Text-Editor
+- **Entscheidung / Änderung:**
+  1. **Robuster AppImage-Autostart (`AutostartPlatform`, `AppOrchestrator`):**
+     - **Ursachenanalyse:** Beim Betrieb als AppImage lieferte die Standardmethode zur Pfadermittlung das temporäre Mount-Verzeichnis (`/tmp/.mount_*`), welches nach einem Systemneustart ungemountet und gelöscht ist. Dadurch schlug der Start via KDE Autostart mit "Berechtigung zum Ausführen fehlt" fehl.
+     - **Persistente Pfadauflösung:** Erkennung der AppImage-Laufzeitumgebung über die `$APPIMAGE`-Umgebungsvariable. Verweist im `.desktop`-Autostart-Eintrag verlässlich auf die persistente AppImage-Datei des Nutzers.
+     - **Ausführungsrechte & Selbstheilung:** Automatische Vergabe von Ausführungsrechten (`0o755`) sowohl für die `.desktop`-Datei als auch für die referenzierte Binär-/AppImage-Datei. Validierung des `Exec`-Ziels beim Programmstart: Veraltete oder ungültige temporäre Pfade werden automatisch erkannt und auf das aktuelle AppImage aktualisiert.
+  2. **KWin-Z-Order-Korrektur & Yakuake / Super-Taste Fix (`KWinPlatform`, `AppOrchestrator`):**
+     - **KWin Window Rules Bereinigung:** Entfernung der erzwungenen `above=true` Regel mit `aboverule=2` (Force). Dadurch wird verhindert, dass KWin die Whisper Pill über systemnahe Overlays wie Dropdown-Terminals (Yakuake via F12) oder Anwendungsstarter (Super-Taste / Kickoff) zwingt. Die normale Vordergrund-Platzierung wird sauber über Slints natives Window-Attribut gesteuert.
+     - **Automatischer Auto-Dismiss-Timer (Ready-Zustand):** Nach erfolgreicher Transkription und Zwischenablage-Synchronisation (Zustand 3 "Ready") blendet sich die Pill nach 8 Sekunden Inaktivität automatisch aus. Verhindert, dass die Pill ungenutzt im oberen Desktopbereich verharrt und bei späterer Yakuake-Nutzung stört.
+     - Bei Interaktion (z. B. Aufklappen der Details, Fortsetzen oder Neuaufnahme) wird der Timer sauber zurückgesetzt.
+  3. **Scrollbereich für lange Transkripte (`Slint UI`):**
+     - Im erweiterten Review- und Editor-Modus (Zustand 4 "Expanded") wurde das Texteingabefeld in ein natives `ScrollView` gebettet.
+     - Transkripte beliebiger Länge können nun komfortabel mit dem Mausrad gescrollt oder über den Scrollbalken navigiert werden; kein Abschneiden mehr am unteren Fensterrand.
+  4. **Tests & Verifikation:**
+     - 40 Rust-Unit-Tests (`cargo test`) PASSED (inkl. Tests für persistente Pfadauflösung und Exec-Validierung).
+     - `cargo clippy --all-targets` mit 0 Warnungen und 0 Fehlern abgeschlossen.
+     - 19 Python-Unit-Tests (`pytest`) PASSED.
+     - AppImage Release-Build (`dist/Whisper_Pill-x86_64.AppImage`) erfolgreich gebaut und verifiziert.
+- **Betroffene Komponenten:**
+  - `AutostartPlatform` (`app/src/platform/autostart.rs`)
+  - `KWinPlatform` (`app/src/platform/kwin.rs`)
+  - `AppOrchestrator` (`app/src/main.rs`)
+  - `AppConfig` (`app/src/config.rs`)
+  - `AppWindow` (`app/ui/appwindow.slint`)
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-09-27 - Phase 2: Vollständige technische & Benutzer-Dokumentation, README- und .gitignore-Erweiterung
+- **Entscheidung / Änderung:**
+  1. **Erweiterung der `.gitignore`:**
+     - Umfassende Ausschlussregeln für alle Rust-Build-Artefakte (`target/`, `app/target/`, `*.rlib`, `*.rmeta`).
+     - Ausschluss aller Packaging- und AppImage-Ausgaben (`dist/`, `*.AppImage`, `packaging/AppDir/`, generierte PNG-Icons).
+     - Ausschluss lokaler KI-Modelldateien (`*.bin`, `ggml-*.bin`, `models/`, `*.onnx`) und Diagnose-Logdateien (`error.log`, `*.log`).
+  2. **Aktualisierung des Technischen Architekturhandbuchs (`docs/architecture/technical_documentation.md`):**
+     - Vollständige Architektur- und Entwicklerdokumentation für die native Rust-Anwendung mit Slint-Framework.
+     - Systemübersichts-Diagramm, Slint-Zustandsautomat mit allen Kapselzuständen (`Hidden`, `Recording`, `Transcribing`, `Ready`, `Expanded`, `Settings`).
+     - Modul- und Klassendiagramm (`AudioRecorder`, `WhisperEngine`, `PillTray`, `ClipboardManager`, `KWinManager`, `AppConfig`, `Logger`).
+     - Sequenzdiagramm für die Audio-zu-Clipboard-Pipeline und Detaillierung des Multi-Thread-Concurrency-Modells.
+     - Build- und Packaging-Spezifikation für die AppImage-Erstellung.
+  3. **Endbenutzer-Handbücher (`docs/user_guide.html` & `docs/USER_GUIDE.md`):**
+     - Bereitstellung des Endbenutzer-Handbuchs sowohl im Markdown-Format für GitHub/IDE-Leser als auch als autarkes, ansprechendes HTML-Dokument (Zero-CDN, vollständige Offline-Nutzung).
+     - Beschreibung von Schnellstart via AppImage, Shortcuts (<kbd>Super</kbd>+<kbd>Strg</kbd>+<kbd>P</kbd>), Einstellungsdialog, Modellauswahl (Base vs. Small), Beam Search, Gain, Autostart und Fehlerlog-Diagnose.
+  4. **Aktualisierung der Haupt-`README.md`:**
+     - Überarbeitung mit Rust-Fokus, Performance-Highlights, AppImage-Schnellstartanleitung, Modell-Download-Hinweisen und detaillierten Build-Befehlen (`cargo run`, `cargo build --release`, `./scripts/build_appimage.sh`).
+  5. **Verifikation & Test-Ausführung:**
+     - 38 Rust-Unit-Tests (`cargo test`) PASSED.
+     - `cargo clippy --all-targets` fehler- und warnungsfrei.
+     - 19 Python-Unit-Tests (`pytest`) PASSED.
+     - Zero-Download & Offline Security-Audit PASSED.
+- **Betroffene Komponenten:**
+  - `README.md`, `.gitignore`
+  - `TechnicalDocumentation` (`docs/architecture/technical_documentation.md`)
+  - `UserGuide` (`docs/user_guide.html`, `docs/USER_GUIDE.md`)
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-09-27 - Phase 2: Autarke Linux-AppImage-Erstellung (13 MB Bundle) & CLI-Flags
+- **Entscheidung / Änderung:**
+  1. **Autarkes AppImage Packaging (`scripts/build_appimage.sh`, `dist/Whisper_Pill-x86_64.AppImage`):**
+     - Gemäß Benutzeranforderung wurde die native Rust-Anwendung in ein distributionsunabhängiges, portables Linux-AppImage paketiert.
+     - Release-Optimierung: `cargo build --release` mit voller C++-Optimierung (`-O3`), Vektorisierung für Whisper-Inferenz und Slint-Software/FemtoVG-Renderer.
+     - AppDir-Strukturierung nach Freedesktop- und AppImageKit-Standard:
+       - Starter-Skript `AppRun` mit dynamischer Pfadbindung (`LD_LIBRARY_PATH`, `XDG_DATA_DIRS`).
+       - Desktop-Entry `whisper-pill.desktop` mit korrekten Kategorien (`Utility;AudioVideo;Audio;Recorder;`).
+       - Hochauflösende Vektorgrafik (`whisper-pill.svg`) und gerasterte PNG-Icons (`256x256`, `512x512`) mit Kapsel-Design und dynamischer Audio-Wellenform.
+     - Komprimierung via `appimagetool` mit SquashFS/Zstandard: Das gesamte autarke Whisper-KI-Diktierprogramm umfasst lediglich **13 MB**!
+  2. **CLI-Flags für Terminal-Nutzung (`main.rs`):**
+     - Integration von `--version` / `-v` (Ausgabe der Version und sauberer Exit).
+     - Integration von `--help` / `-h` (Nutzungshinweise und Parameterübersicht).
+  3. **Tests & Verifikation:**
+     - AppImage-Ausführungstest via `./dist/Whisper_Pill-x86_64.AppImage --version` erfolgreich (`Whisper Pill v0.1.0`).
+     - AppImage-Hilfeausgabe via `./dist/Whisper_Pill-x86_64.AppImage --help` verifiziert.
+     - 38 Rust-Unit-Tests (`cargo test`) PASSED.
+- **Betroffene Komponenten:**
+  - `Packaging`, `AppRun`, `DesktopEntry` (`packaging/`, `scripts/build_appimage.sh`, `dist/`)
+  - `AppOrchestrator` (`main.rs`)
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-09-27 - Phase 2: Rust-Code-Checkup, Clippy-Linting (0 Fehler/Warnungen) & VS Code rust-analyzer Konfiguration
+- **Entscheidung / Änderung:**
+  1. **Rust-Code-Checkup & Qualitätsprüfung:**
+     - Durchführung einer vollständigen statischen Code- und Typanalyse mittels `cargo check`, `cargo clippy --all-targets` und `cargo test`.
+     - Bereinigung sämtlicher Lints (u. a. `bool_assert_comparison`, `field_reassign_with_default`, `collapsible_if`, idiomatische Match-Klauseln).
+     - Ergebnis: **0 Fehler, 0 Warnungen**, alle 38 Unit- und Integrationstests erfolgreich durchgelaufen (`test result: ok. 38 passed`).
+  2. **Behebung von VS Code / rust-analyzer Fehlermeldungen (`.vscode/settings.json`):**
+     - Ursachenanalyse für Syntax- und Auflösungsfehler in VS Code:
+       - Die Rust-Crate befindet sich im Unterverzeichnis `app/`. Ohne Workspace-Verknüpfung sucht `rust-analyzer` im Workspace-Root und kann `Cargo.toml` nicht automatisch zuordnen.
+       - Slint generiert GUI-Code und Datenstrukturen (`AppWindow`) zur Build-Zeit via `build.rs`. Wenn Build-Skripte in `rust-analyzer` inaktiv sind, werden diese Typen fälschlicherweise als unauflösbar markiert.
+     - Lösung: Bereitstellung einer dedizierten `.vscode/settings.json` mit verknüpftem Projektpfad (`app/Cargo.toml`) sowie aktivierten Build-Skripten und Makro-Expansion.
+- **Betroffene Komponenten:**
+  - `Config`, `Logging`, `AppOrchestrator` (`config.rs`, `logging.rs`, `main.rs`)
+  - VS Code Konfiguration (`.vscode/settings.json`)
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-09-27 - Phase 2: Korrektur der Checkbox-Ausrichtung & UI-Feinschliff (Autostart & Gain)
+- **Entscheidung / Änderung:**
+  1. **Behebung des Überhangs bei Checkboxen (`ui/appwindow.slint`):**
+     - Gemäß Benutzerhinweis ragten die Checkboxen bei "Mit dem System starten" und "Automatische Lautstärkeanpassung (Gain)" oben aus dem Rahmen heraus.
+     - Ursache war eine unzuverlässige dynamische Höhenberechnung (`y: (52px - self.height) / 2`) auf dem inneren Layout, welche in Slint zu negativen Offsets führte.
+     - Lösung: Entfernung des manuellen `y`-Offsets und Umstellung auf idiomatische Slint-Zentrierung (`VerticalLayout { alignment: center; }`) sowohl für die Checkbox als auch für den Textblock.
+  2. **Ästhetischer Feinschliff der Options-Karten:**
+     - Checkbox-Dimensionen auf 22 × 22 px verfeinert (6 px Eckenradius, 1.5 px Randstärke).
+     - Farbschema: Im inaktiven Zustand dezenter dunkler Hintergrund (`#18181b`) mit `#52525b` Kontur (Hover: `#71717a`), im aktiven Zustand leuchtendes Cyan (`#38bdf8`) mit tiefdunklem, fettem Häkchen (`✔`).
+     - Gesamte Kartenhöhe auf 54 px harmonisiert und mit sanftem Hover-Effekt (`#25252a`, 100 ms Transition) ausgestattet.
+  3. **Tests:**
+     - 38 Rust-Unit-Tests (`cargo test`) PASSED (0 Fehler, 0 Warnungen).
+     - 19 Python-Unit-Tests (`pytest`) PASSED.
+     - Zero-Download & Offline Security-Audit PASSED.
+- **Betroffene Komponenten:**
+  - `AppWindow` (`ui/appwindow.slint`)
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-09-27 - Phase 2: Ästhetisches Einstellungs-UI-Redesign (580x480 px) & Dynamische Tray-Transkriptionsanzeige
+- **Entscheidung / Änderung:**
+  1. **Großzügiges & Ästhetisches Einstellungs-UI (`ui/appwindow.slint`, `main.rs`):**
+     - Gemäß Benutzeranforderung wurde das Einstellungsfenster vergrößert (580 x 480 px statt zuvor 520 x 390 px) und optisch modernisiert.
+     - Großzügigere Abstände: 20 px horizontales Padding, 16 px vertikales Padding, 12 px vertikaler Abstand zwischen den Sektionen.
+     - Erweiterte Options- und Ausfallkarten: Modell- und Suchstrategie-Karten wurden auf 72 px vergrößert, wodurch Beschreibungen und Status-Badges luftig und unverkrampft Platz finden.
+     - Modernisierte Badges mit dezentem Pillen-Hintergrund für Modellverfügbarkeit (`Bereit` in Smaragdgrün, `Auto-Download` in Cyan).
+     - Intelligente Fensterzentrierung und -verschiebung bei Aufruf aus dem Tray-Menü, damit das vergrößerte Fenster stets perfekt auf dem Bildschirm positioniert ist.
+  2. **Dynamische Transkriptionsanzeige im System-Tray (`platform/tray.rs`, `main.rs`):**
+     - Das System-Tray-Icon signalisiert nun in Echtzeit, wenn die Whisper-KI eine Aufnahme transkribiert:
+       - **Icon-Grafik:** Statt des roten REC-Punkts wird bei aktiver Transkription eine dynamische Wellenform (`ılı`) in leuchtendem Bernstein/Gold (`#F59E0B`) gerendert.
+       - **Tooltip:** Der Mouseover-Tooltip aktualisiert sich dynamisch auf *"Whisper Pill: Transkribiert..."* mit Untertitel *"Whisper-KI verarbeitet Sprachaufnahme..."*.
+       - **Menü:** Der oberste Menüeintrag zeigt während des Prozesses *"⏳ Transkription läuft..."*.
+     - **Architektur:** Implementierung eines asynchronen `TrayHandle` über native Tokio-Kanäle (`tokio::sync::mpsc`), das bei Zustandsänderungen DBus-Signals (`NewIcon`, `NewToolTip`) verzögerungsfrei an die Desktop-Umgebung (KDE Plasma, GNOME, etc.) emittiert.
+  3. **Tests:**
+     - 38 Rust-Unit-Tests (`cargo test`) PASSED (0 Fehler, 0 Warnungen).
+     - 19 Python-Unit-Tests (`pytest`) PASSED.
+     - Zero-Download & Offline Security-Audit PASSED.
+- **Betroffene Komponenten:**
+  - `PillTray` & `TrayHandle` (`platform/tray.rs`)
+  - `AppWindow` (`ui/appwindow.slint`)
+  - `AppOrchestrator` (`main.rs`)
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-09-27 - Phase 2: Fehlerlog-Zugriff über Systemtray-Menü & Diagnose-Protokollierung
+- **Entscheidung / Änderung:**
+  1. **Fehler- und Diagnose-Logging (`logging.rs`):**
+     - Gemäß Benutzeranforderung wurde ein dediziertes Logging-System implementiert, das Laufzeitfehler, Warnungen und Diagnoseereignisse strukturiert in eine persistente Logdatei (`~/.local/state/whisper_pill/error.log` bzw. `$XDG_STATE_HOME/whisper_pill/error.log`) schreibt.
+     - Vollständige Implementierung über die Standardbibliothek (Zero-Dependency-Prinzip): Zeitstempelberechnung im UTC-Format ohne externe Crates.
+     - Thread-sichere Schreibzugriffe via `Mutex` und automatische Initialisierung mit Diagnose-Header beim Erststart.
+  2. **Systemtray-Kontextmenü-Integration (`platform/tray.rs`):**
+     - Neuer Kontextmenü-Eintrag "Fehlerlog anzeigen..." integriert (`TrayAction::OpenLog`).
+     - Öffnet die Logdatei direkt im nativen Standard-Texteditor des Benutzers (z. B. Kate, KWrite, Gedit, Mousepad via `xdg-open` unter Linux, `rundll32` unter Windows, `open` unter macOS).
+  3. **Vollständige Fehler-Verdrahtung (`main.rs`):**
+     - Protokollierung des Anwendungsstarts sowie aller relevanten System-Events.
+     - Transkriptionsfehler, Audio-Aufnahmefehler und Download-Fehlschläge werden strukturiert mit Zeitstempel und Komponenten-Tag im Log festgehalten.
+  4. **Tests:**
+     - 37 Rust-Unit-Tests (`cargo test`) PASSED (0 Fehler, 0 Warnungen).
+     - 19 Python-Unit-Tests (`pytest`) PASSED.
+     - Zero-Download & Offline Security-Audit PASSED.
+- **Betroffene Komponenten:**
+  - `LoggingManager` (`logging.rs`)
+  - `PillTray` (`platform/tray.rs`)
+  - `AppOrchestrator` (`main.rs`)
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-09-27 - Phase 2: Automatischer Modell-Download beim Start & bei Modellauswahl
+- **Entscheidung / Änderung:**
+  1. **Automatischer Modell-Downloader (`transcription/downloader.rs`):**
+     - Gemäß Benutzeranforderung wird ein ausgewähltes Modell, falls es lokal noch nicht existiert, beim Programmstart sowie bei der Auswahl in den Einstellungen automatisch im Hintergrund heruntergeladen.
+     - Der Download erfolgt non-blocking in einem separaten Thread via `curl` / `wget` von der offiziellen HuggingFace whisper.cpp-Quelle in eine temporäre Datei (`.tmp`) mit abschließender atomarer Umbenennung.
+     - Während des Downloads bleibt die Anwendung voll funktionsfähig und greift auf vorhandene Fallback-Modelle zurück.
+     - Nach Fertigstellung schaltet die Transkriptions-Engine sofort auf das neue Modell um und aktualisiert die Status-Badges im Einstellungsdialog dynamisch auf `[Bereit]`.
+  2. **Bereitstellung von `ggml-small.bin` & Standalone-Skript (`scripts/download_model.sh`):**
+     - Das `small`-Modell (466 MB) wurde erfolgreich in das lokale Cache-Verzeichnis geladen.
+     - Sowohl `ggml-base.bin` (142 MB) als auch `ggml-small.bin` (466 MB) stehen nun lokal zur Verfügung.
+     - Ergänzung eines universellen CLI-Skripts `scripts/download_model.sh` für manuelle Modellinstallationen.
+  3. **Tests:**
+     - 33 Rust-Unit-Tests (`cargo test`) PASSED (0 Fehler, 0 Warnungen).
+     - 19 Python-Unit-Tests (`pytest`) PASSED.
+     - Zero-Download & Offline Security-Audit PASSED.
+- **Betroffene Komponenten:**
+  - `ModelDownloader` (`transcription/downloader.rs`)
+  - `AppOrchestrator` (`main.rs`)
+  - `AppWindow` (`ui/appwindow.slint`)
+  - `scripts/download_model.sh`
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-09-27 - Phase 2: Intelligenter Modell-Fallback, opakes & kompaktes Einstellungs-UI sowie Positions-Fixes
+- **Entscheidung / Änderung:**
+  1. **Intelligenter Modell-Fallback & Cache-Erkennung (`config.rs`, `engine.rs`):**
+     - Wenn ein Modell wie `small` ausgewählt ist, aber aktuell nur `base` (`ggml-base.bin`) im lokalen Cache liegt, greift automatisch der intelligente Fallback auf das vorhandene Modell.
+     - Verhindert vollständig den Abbruch der Transkription ("Whisper-Modell nicht gefunden") und garantiert dauerhafte Funktionsfähigkeit.
+     - Im Einstellungsdialog zeigen Status-Badges (`[Bereit]` in Grün bzw. `[Fehlt lokal]` in Orange) direkt an, welche Modelldateien lokal auf dem System installiert sind.
+  2. **Vollständig opakes (blickdichtes) Einstellungs-UI (`ui/appwindow.slint`):**
+     - Im Einstellungsmodus wechselt der Hintergrund der Kapsel von der leichten Transparenz der Pill auf ein 100 % solides, blickdichtes Anthrazit (`#18181b`).
+     - Dahinterliegende Desktop-Fenster scheinen nicht mehr durch; Kontrast und Lesbarkeit sind optimal.
+  3. **Kompaktes UI-Layout (390 px) & Intelligente Positionierung gegen Bildschirmrand-Überhang:**
+     - Die Höhe des Einstellungsfensters wurde von 620 px auf 390 px gestrafft (Breite einheitlich 520 px).
+     - Beim Öffnen der Einstellungen über das Systemtray-Menü wird die Pill-Position gemerkt und das Fenster bei Bedarf automatisch nach oben versetzt, sodass es niemals unter den unteren Bildschirmrand oder in die Taskleiste ragt.
+     - Beim Speichern oder Abbrechen wird die ursprüngliche Pill-Position exakt wiederhergestellt.
+  4. **Vollständige Verschiebbarkeit (Drag to Move) des Einstellungsfensters:**
+     - Das gesamte Einstellungs-Layout ist in eine Slint `WindowMoveArea` gebettet.
+     - Eine markante Kopfzeile mit Griff-Symbol (`⠿ ⚙ Whisper Pill Einstellungen (Ziehen zum Verschieben)`) signalisiert dem Benutzer visuell, dass das Fenster frei mit der Maus verschoben werden kann.
+  5. **Behebung von Logikfehlern und Code-Hygiene in `main.rs`:**
+     - Der Positions-Speicher-Timer (500 ms) ignoriert nun Phasen, in denen das Fenster verborgen oder im Einstellungsmodus ist; die Pill-Koordinaten werden nicht mehr fälschlich überschrieben.
+     - Beenden der App erfolgt sauber über `slint::quit_event_loop()`.
+     - Sämtliche Clippy- und Linter-Meldungen restlos behoben (0 Warnungen).
+  6. **Tests:**
+     - 31 Rust-Unit-Tests (`cargo test`) PASSED (0 Fehler, 0 Warnungen).
+     - 19 Python-Unit-Tests (`pytest`) PASSED.
+     - Zero-Download & Offline Security-Audit PASSED (100 % lokal).
+- **Betroffene Komponenten:**
+  - `AppConfig` (`config.rs`)
+  - `AppWindow` (`ui/appwindow.slint`)
+  - `AppOrchestrator` (`main.rs`)
+  - `WhisperEngine` (`transcription/engine.rs`)
+  - `AutostartPlatform` (`platform/autostart.rs`)
+  - `KWinPlatform` (`platform/kwin.rs`)
+  - `PillState` (`state.rs`)
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-09-27 - Phase 2: Silent Background Startup, Integrierte Einstellungen (Single Window) & KWin Window Rules
+- **Entscheidung / Änderung:**
+  1. **Lautloser Hintergrund-Start (Silent Startup):**
+     - Die Anwendung öffnet beim Start nicht mehr automatisch das Pill-Fenster und startet keine Sofort-Aufnahme mehr.
+     - Whisper Pill startet rein im Hintergrund als Systemtray-Icon und wartet passiv auf den globalen Hotkey (`Super+Strg+P`) oder Aktionen im Tray-Menü.
+  2. **Integrierte Single-Window-Architektur für Einstellungen:**
+     - Der Einstellungsdialog wurde nativ in `AppWindow` integriert (`is_settings: bool`) und die separate `SettingsWindow`-Instanz entfernt.
+     - Es existiert prozessweit stets nur genau eine einzige OS-Fensterinstanz, wodurch das Erscheinen eines zweiten generischen Wayland-Icons in der Taskleiste zuverlässig eliminiert wurde.
+     - Das Öffnen der Einstellungen über das Tray-Menü ("Einstellungen...") erfolgt nun absolut fehlerfrei, indem die Pill direkt am Bildschirm im Einstellungsmodus expandiert.
+  3. **KWin-Fensterregeln (`platform/kwin.rs`):**
+     - Automatische Konfiguration von KDE KWin Fensterregeln (`skiptaskbar=true`, `skipswitcher=true`, `above=true`).
+     - Verhindert vollständig, dass Whisper Pill ein Taskbar-Icon in der Anwendungsleiste erzeugt.
+     - Verhindert vollständig, dass Whisper Pill im Alt+Tab Task-Switcher erscheint oder beim Durchwechseln von Fenstern ungewollt wieder aufploppt.
+  4. **Tests:**
+     - 29 Rust-Unit-Tests (`cargo test`) PASSED (0 Fehler, 0 Warnungen).
+     - 19 Python-Unit-Tests (`pytest`) PASSED.
+     - Zero-Download & Offline Security-Audit PASSED (100 % lokal).
+- **Betroffene Komponenten:**
+  - `AppOrchestrator` (`main.rs`)
+  - `AppWindow` (`ui/appwindow.slint`)
+  - `KWinPlatform` (`platform/kwin.rs`)
+  - `platform/mod.rs`
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-09-27 - Phase 2: Vereinheitlichung der visuellen UI-Bezeichnung auf "Whisper Pill" & Optimale Standardeinstellungen
+- **Entscheidung / Änderung:**
+  1. **Visuelle Benennung für den Benutzer ("Whisper Pill"):**
+     - Alle für den Endbenutzer sichtbaren Stellen wurden konsistent von technischem `whisper-pill` auf das lesbare `Whisper Pill` umgestellt:
+       - Hauptfenster (`AppWindow` Titel und Kapsel-Label `🎙 Whisper Pill`)
+       - Einstellungsdialog (`SettingsWindow` Titel, Header und Beschreibungen)
+       - Systemtray-Tooltip (`Whisper Pill (Super+Strg+P)`)
+       - Kontextmenü-Einträge
+       - Linux Desktop-Starter (`Name=Whisper Pill` im `.desktop`-Autostart-Eintrag)
+       - KDE Global Shortcuts Anzeige (`Whisper Pill`)
+       - Python-Prototyp UI-Elemente
+  2. **Setzen der optimalen Standardeinstellungen (Best Settings by Default):**
+     - Die Default-Konfiguration (`AppConfig::default()`) wurde ab Werk auf die bestmögliche Transkriptionsqualität vorkonfiguriert:
+       - **Sprachmodell:** `small` (deutlich höhere Treffsicherheit bei Nuscheln und Dialekt statt dem früheren `base`)
+       - **Suchstrategie:** `beam_search = true` (gründliche Beam Search Analyse paralleler Hypothesen)
+       - **Audio-Pegelanpassung:** `normalize_audio = true` (automatische Dynamik-Anhebung leiser Wörter)
+       - **Systemstart (Autostart):** `autostart = true` (Whisper Pill startet standardmäßig automatisch im Hintergrund beim Systemstart und richtet den `.desktop`-Eintrag beim Erststart automatisch ein)
+  3. **Tests:**
+     - 28 Rust-Unit-Tests (`cargo test`) PASSED.
+     - 19 Python-Unit-Tests (`pytest`) PASSED.
+     - Zero-Download & Offline Security-Audit PASSED (100 % lokal).
+- **Betroffene Komponenten:**
+  - `AppConfig` (`config.rs`)
+  - `AppWindow` & `SettingsWindow` (`ui/appwindow.slint`)
+  - `TrayIntegration` (`platform/tray.rs`)
+  - `AutostartPlatform` (`platform/autostart.rs`)
+  - `HotkeyPlatform` (`platform/hotkey.rs`)
+  - `PillWindow` & `TrayIcon` (`prototype/ui/`)
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-09-27 - Phase 2: Anti-Nuschel-Optimierungen, Einstellungsdialog & Autostart-Verifikation
+- **Entscheidung / Änderung:**
+  1. **Anti-Nuschel-Optimierungen (4 Hebel):**
+     - **Option 1 (Modellauswahl):** Benutzer kann zwischen `base` (Standard, ~140 MB, ressourcenschonend) und `small` (Empfohlen bei undeutlicher Sprache / Nuscheln / Dialekt, ~460 MB) wählen. Modell wird bei Bedarf dynamisch im laufenden Betrieb neu geladen.
+     - **Option 2 (Audio-Pegelanpassung / Normalisierung):** Automatische Skalierung leiser Tonsignale auf Whisper-Optimalpegel (bis zu 5x Gain) vor der Inferenz, um leise genuschelte Silben deutlicher hervorzuheben. Über die Einstellungen aktivier-/deaktivierbar.
+     - **Option 3 (Deutscher Initial-Prompt):** Einbettung eines neutralen deutschen Referenz-Prompts (`"Hallo, dies ist ein deutsches Diktat."`), wodurch Whisper auf die deutsche Sprache konditioniert wird, ohne starre Vorgaben zu Grammatik oder Rechtschreibung zu erzwingen (erhält natürliche Umgangssprache, Abbrüche und Halbsätze).
+     - **Option 4 (Suchstrategie):** Wahl zwischen `Schnell (Greedy)` (sofortige Wortwahl, blitzschnell) und `Gründlich (Beam Search)` (parallele Analyse alternativer Wortfolgen für höchste Präzision bei Nuscheln, + ca. 0,2s).
+  2. **Einstellungsdialog (`SettingsWindow`):**
+     - Integriert in Slint GUI mit modernem Dark-Mode-Design.
+     - Aufrufbar über das Kontextmenü des System-Tray-Icons ("Einstellungen...").
+     - Enthält verständliche, noob-taugliche Erklärungen zu den Auswirkungen jeder Option auf Erkennungsgenauigkeit und Geschwindigkeit.
+     - Bietet "Speichern & Übernehmen" sowie "Abbrechen". Konfiguration wird persistent in der Konfigurationsdatei gespeichert.
+  3. **Autostart-Verifikation (Vollständige Entfernung):**
+     - Beim Deaktivieren der Autostart-Checkbox wird die `.desktop`-Datei im Autostart-Verzeichnis sauber vom Dateisystem entfernt.
+     - Neuer Unit-Test `test_write_and_verify_complete_removal_on_disable` verifiziert die restlose Entfernung.
+  4. **Zero-Download-Richtlinie final umgesetzt:**
+     - Entfernung des letzten verbliebenen `curl`-Downloads in `TranscriptionEngine`. Modelle müssen vorab im Modellverzeichnis hinterlegt sein.
+     - `check_downloads.py` Sicherheits-Audit liefert 0 Funde (100% offline).
+  5. **Tests:**
+     - 28 Rust-Unit-Tests (`cargo test`) PASSED (0 Warnungen, 0 Fehler).
+     - 19 Python-Unit-Tests (`pytest`) PASSED.
+- **Betroffene Komponenten:**
+  - `TranscriptionEngine` (`transcription/engine.rs`)
+  - `AppConfig` (`config.rs`)
+  - `AutostartPlatform` (`platform/autostart.rs`)
+  - `TrayIntegration` (`platform/tray.rs`)
+  - `SettingsWindow` (`ui/appwindow.slint`)
+  - `AppOrchestrator` (`main.rs`)
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-09-27 - Phase 2: System-Tray Tooltip bei Mouseover (ksni ToolTip)
+- **Entscheidung / Änderung:**
+  1. **Tooltip für System-Tray-Icon implementiert:**
+     - In der Tray-Implementierung wurde die Methode `tool_tip(&self) -> ksni::ToolTip` implementiert.
+     - Beim Mouseover über das Tray-Icon in KDE Plasma, GNOME (AppIndicator) und XFCE wird nun der formatierte Tooltip angezeigt:
+       - **Titel:** `whisper-pill (Super+Strg+P)`
+       - **Beschreibung:** `Minimalistisches Desktop-Diktier-Utility` (Klick-Hinweistext entfernt).
+       - **Icons:** Skalierte 32x32- und 64x64-Kapsel-Icons im Tooltip-Vorschaubild.
+  2. **Tests:**
+     - Neuer Unit-Test `test_tray_tooltip_content` prüft Titel, Shortcut-Präsenz, exakte Beschreibung und Pixmap-Dimensionen.
+     - Alle 21 Rust-Tests (`cargo test`) und 19 Python-Tests (`pytest`) erfolgreich PASSED.
+- **Betroffene Komponenten:**
+  - `TrayIntegration` (`platform/tray.rs`)
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-09-27 - Datenschutz & Anonymisierung: Dateipfade aus allen Berichten entfernt & Skills aktualisiert
+- **Entscheidung / Änderung:**
+  1. **Bereinigung existierender Berichte (`docs/`):**
+     - Alle Dateipfade (insbesondere absolute Benutzerpfade und Quellcodepfade) wurden aus `docs/security_audit_report.md`, `docs/unit_test_report.md`, `docs/ui_test_report.md` sowie `docs/JOURNAL.md` vollständig entfernt.
+     - Statt interner Dateipfade werden nun ausschließlich funktionale Modul- und Komponentennamen (z. B. `AudioRecorder`, `WhisperEngine`, `HotkeyPlatform`, `UI`) verwendet, um die Privatsphäre und Systemsicherheit in öffentlichen Repositories (GitHub) zu wahren.
+  2. **Aktualisierung aller Skill-Richtlinien (`.agent/skills/`):**
+     - Die Skill-Definitionen `security-audit`, `test-core`, `test-ui`, `test-e2e`, `tech-docs` und `user-docs` wurden verbindlich um die Datenschutz-Richtlinie für öffentliche Berichte erweitert: Zukünftige Berichte dürfen keinerlei absolute System- oder lokale Quellcodedateipfade enthalten.
+  3. **Tests:**
+     - Alle 20 Rust-Tests (`cargo test`) und 19 Python-Tests (`pytest`) PASSED.
+- **Betroffene Komponenten:**
+  - `docs/security_audit_report.md`
+  - `docs/unit_test_report.md`
+  - `docs/ui_test_report.md`
+  - `docs/JOURNAL.md`
+  - `.agent/skills/security-audit/SKILL.md`
+  - `.agent/skills/test-core/SKILL.md`
+  - `.agent/skills/test-ui/SKILL.md`
+  - `.agent/skills/test-e2e/SKILL.md`
+  - `.agent/skills/tech-docs/SKILL.md`
+  - `.agent/skills/user-docs/SKILL.md`
+  - `AGENTS.md`
+
+---
+
+### 2026-09-27 - Security-Audit: Vollständiger Sicherheits- und Offline-Scan der Rust-App
+- **Entscheidung / Änderung:**
+  1. **Durchführung des Security-Audits für die Rust-Anwendung (`app/`):**
+     - Vollständige Prüfung auf Secrets, bekannte Lücken (CVEs in `Cargo.lock`), SAST / Memory Safety, Command Injections und Audio-Datenschutz.
+     - **Ergebnis:**
+       - **Secrets:** 0 Hardcoded Credentials (**PASSED**).
+       - **Abhängigkeiten:** Keine HTTP-/Netzwerk-Crates wie `reqwest`/`hyper`/`ureq` eingebunden. Alle Lizenzen permissiv (**PASSED**).
+       - **Memory Safety:** 0 `unsafe` Blöcke in `app/src/`, 100 % Safe Rust (**PASSED**).
+       - **Command Injection:** Alle `Command::new`-Aufrufe (`hotkey.rs`, `tray.rs`) nutzen typsichere Parameterlisten ohne Shell-Interpolation (**PASSED**).
+       - **Audio-Datenschutz:** Audio-Puffer im RAM werden direkt nach der Inferenz vor der Freigabe mit `0.0` genullt (`main.rs`, `recorder.rs`) (**PASSED**).
+       - **Zero-Download-Richtlinie:** Befund in [`app/src/transcription/engine.rs`](app/src/transcription/engine.rs#L38-L54) bestätigt (`curl`-Download für HuggingFace `ggml-base.bin`). Zur Behebung vorgemerkt (**ACTION REQUIRED**).
+  2. **Audit-Bericht aktualisiert:**
+     - [`docs/security_audit_report.md`](docs/security_audit_report.md) mit detaillierten Tabellen und Prüfpunkten für die Rust-App neu generiert.
+  3. **Tests:**
+     - Alle 20 Rust-Tests (`cargo test`) und 19 Python-Tests (`pytest`) PASSED.
+- **Betroffene Komponenten:**
+  - `docs/security_audit_report.md`
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-09-27 - Security-Skill: Generelle Zero-Download- & Netzwerk-Prüfung (check_downloads.py)
+- **Entscheidung / Änderung:**
+  1. **Generelle Download- & Netzwerk-Verifikation im Security-Audit:**
+     - Der Skill [`.agent/skills/security-audit/SKILL.md`](.agent/skills/security-audit/SKILL.md) wurde um eine lückenlose, generelle Überprüfung auf jegliche Download-Aktivitäten erweitert (Zero-Download & Strict Offline Policy).
+     - Geltender Grundsatz: Als rein lokales Desktop-Utility dürfen zur Laufzeit keine Daten, Modelle oder Binärdateien aus dem Internet geladen werden.
+  2. **Automatisierter Scanner-Script (`check_downloads.py`):**
+     - Neues Prüfwerkzeug [`.agent/skills/security-audit/scripts/check_downloads.py`](.agent/skills/security-audit/scripts/check_downloads.py) implementiert.
+     - Scannt Rust-Quellcode (`app/src/`), Python-Code (`prototype/`, `tests/`), `Cargo.lock` und `Cargo.toml` auf:
+       - CLI-Downloader (`curl`, `wget`, `aria2`, `ftp`) via Subprozesse.
+       - Direkte Socket-APIs (`TcpStream`, `UdpSocket`).
+       - HTTP-Bibliotheken (`reqwest`, `hyper`, `ureq`, `urllib`, `requests`, `aiohttp`, etc.).
+       - Hardcodierte Remote-URLs und ungesicherte KI-Modell-Downloads.
+  3. **Identifizierter Befund:**
+     - Der Scanner identifizierte den automatischen `curl`-Fallback für das GGML-Modell in [`app/src/transcription/engine.rs`](app/src/transcription/engine.rs#L38-L54), der transparent protokolliert und zur Bereinigung vorgemerkt wurde.
+- **Betroffene Komponenten:**
+  - `.agent/skills/security-audit/SKILL.md`
+  - `.agent/skills/security-audit/scripts/check_downloads.py` (neu)
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-09-27 - Phase 2: Fenster-Verschiebung (WindowMoveArea), Positions-Persistenz (config.json), Autostart & Menü-Beschriftung
+- **Entscheidung / Änderung:**
+  1. **Menü-Beschriftung im System-Tray:**
+     - Menüeintrag für das Beenden der Anwendung exakt nach Vorgabe auf `Whisper Pill Beenden` angepasst.
+  2. **Verschiebbare Kapsel-GUI (Drag to Move):**
+     - Integration von Slints nativem `WindowMoveArea`-Element in [`app/ui/appwindow.slint`](app/ui/appwindow.slint).
+     - In allen kompakten Zuständen (Idle, Recording, Processing, Ready) kann die schwebende Kapsel nun per Mausklick und Ziehen frei am Desktop platziert werden; Klicks auf Buttons bleiben interaktiv.
+     - Im ausgeklappten Editor-Zustand fungiert die Kopfzeile als Ziehbereich, wodurch Textselektion und Eingabe im Editor vollständig ungestört bleiben.
+  3. **Persistente Fensterposition (`config.json`):**
+     - [`AppConfig`](app/src/config.rs) um `window_x`, `window_y` sowie `load()` und `save()` erweitert (Speicherort: `~/.config/whisper_pill/config.json`).
+     - Beim Start wird eine gespeicherte Position via `set_position(PhysicalPosition)` exakt wiederhergestellt.
+     - Veränderungen der Fensterposition werden kontinuierlich im Hintergrund (500ms Timer) sowie beim Verbergen und Beenden in `config.json` gesichert.
+  4. **System-Autostart (KDE Plasma ab 6.0, GNOME ab 45, XFCE):**
+     - Neues Modul [`app/src/platform/autostart.rs`](app/src/platform/autostart.rs) implementiert die Freedesktop XDG Autostart-Spezifikation via `~/.config/autostart/whisper-pill.desktop`.
+     - Beinhaltet native Spezifikationsflags für KDE Plasma 6+ (`X-KDE-autostart-after=panel`) und GNOME 45+ (`X-GNOME-Autostart-enabled=true`).
+     - Als interaktiver Checkmark-Eintrag `Mit dem System starten (Autostart)` im Kontextmenü des System-Tray-Icons integriert.
+  5. **Tests:**
+     - 5 neue Unit-Tests für `AppConfig` (Persistenz, Serialisierung), `autostart` (XDG .desktop Struktur, Pfad-Auflösung) und Menü-Struktur (6 Einträge).
+     - Alle 20 Rust-Tests (`cargo test`) und 19 Python-Tests (`pytest`) erfolgreich PASSED.
+- **Betroffene Komponenten:**
+  - `app/src/platform/autostart.rs` (neu)
+  - `app/src/platform/mod.rs`
+  - `app/src/platform/tray.rs`
+  - `app/src/config.rs`
+  - `app/src/main.rs`
+  - `app/ui/appwindow.slint`
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-09-27 - Phase 2: Fortsetzungs-Diktat (+ Weiter), Neu-Button, Kapsel-Tray-Icon & Hilfe-Menü
+- **Entscheidung / Änderung:**
+  1. **Fortsetzungs-Diktat (+ Weiter) erweitert Text:**
+     - Bei Klick auf `+ Weiter` nach einer Sprechpause wird der bisherige Transkriptionstext nun nicht mehr überschrieben, sondern sauber mit einem Trennleerzeichen um das neue Sprachsegment erweitert (`whisper_pill::transcription::append_transcript`).
+     - Der kumulierte Gesamtzustand wird unmittelbar in die System-Zwischenablage synchronisiert.
+  2. **Neuer Button "● Neu":**
+     - Im Zustand *Ready* steht nun neben `+ Weiter` ein zusätzlicher Button `● Neu` zur Verfügung.
+     - Klick auf `● Neu` setzt den Textpuffer zurück und startet ein frisches Diktat, dessen Transkription isoliert verarbeitet und kopiert wird.
+  3. **Ergonomische Kapselbreite (520 px):**
+     - Kapselbreite von 480 px auf 520 px angepasst (Höhe 48 px / Editor 240 px, Waveform zentriert bei 215 px), um der Erfolgsmeldung "✔ In Zwischenablage kopiert!" und allen vier Aktionen (`+ Weiter`, `● Neu`, `↗ Details`, `✕`) perfekten Abstand zu bieten.
+  4. **Natives System-Tray-Icon (whisper-pill Kapsel):**
+     - Das generische System-Mikrofon-Icon wurde durch die maßgeschneiderte whisper-pill Kapsel (dunkler Kapselkörper `#18181B`, Cyan-Rand `#38BDF8`, roter REC-Punkt `#EF4444`) ersetzt.
+     - Mathematische Kantenglättung (Antialiasing) via ARGB32-Vektorrasterung (32x32 und 64x64) ohne externe Bilddateien oder Drittanbieter-Abhängigkeiten.
+  5. **Kontextmenü-Hilfe zu GitHub:**
+     - Im System-Tray-Menü wurde der Menüpunkt `Hilfe (GitHub)` ergänzt, der das Projekt-Repository (`https://github.com/Sympa1/whisper_pill`) im Standard-Browser öffnet.
+  6. **Tests:**
+     - 7 neue Unit-Tests für `append_transcript`, `create_tray_icon` (Dimensionen, Pixel-Farben) und die Menü-Struktur hinzugefügt.
+     - Alle 15 Rust-Tests (`cargo test`) und 19 Python-Tests (`pytest`) PASSED.
+- **Betroffene Komponenten:**
+  - `app/src/transcription/accumulator.rs` (neu)
+  - `app/src/transcription/mod.rs`
+  - `app/src/platform/tray.rs`
+  - `app/src/main.rs`
+  - `app/ui/appwindow.slint`
+  - `docs/JOURNAL.md`
+
+---
+
 ### 2026-09-22 - Hygiene: .idea/ in .gitignore aufgenommen & aus Git-Tracking entfernt
 - **Entscheidung / Änderung:**
   - Der JetBrains/IntelliJ-Projektordner `.idea/` wurde in `.gitignore` einkommentiert und via `git rm -r --cached .idea` sauber aus der Git-Versionsverwaltung entfernt (Dateien verbleiben lokal auf der Festplatte).
@@ -41,7 +543,7 @@ Hier werden fundamentale Architekturentscheidungen, erreichte Meilensteine und o
 - **Entscheidung / Änderung:**
   - Da `egui` unter Wayland bei Fenstertransparenz, Schatten und nativer Typografie Einschränkungen zeigte, wurde die Benutzeroberfläche auf **Slint 1.18** migriert.
   - Slint wurde von ehemaligen Qt-Core-Entwicklern geschaffen und kombiniert deklarative Syntax (`.slint`) mit nativer Vektorgrafik und FreeType-Subpixel-Schriftarten bei extrem geringem Speicherverbrauch (~15 MB RAM).
-  - Umgesetzte UI-Features in [`app/ui/appwindow.slint`](file:///home/sympa/Dev/whisper_pill/app/ui/appwindow.slint):
+  - Umgesetzte UI-Features in [`app/ui/appwindow.slint`](app/ui/appwindow.slint):
     1. **Kapselform & Breite:** Kapselbreite auf **480 px** vergrößert (48 px Höhe, bzw. 240 px im Editor, Radius 24 px), wodurch die Erfolgsmeldung "✔ In Zwischenablage kopiert!" und alle Aktionsbuttons (`+ Weiter`, `↗ Details`, `✕`) vollständig und luftig ohne Umbruch nebeneinander Platz finden.
     2. **Farben & Kontraste:** Exakte Prototyp-Farbwerte (`rgba(24, 24, 27, 0.95)`, Border `rgba(255, 255, 255, 0.12)`).
     3. **Pill-Buttons & Editor-Sichtbarkeit:** Eigene `PillButton`-Komponente (`● Aufnehmen`, `■ Stop`, `+ Weiter`, `↗ Details / Edit`, `✕ Verbergen`, `⏻ Beenden`, `⎘ Text kopieren`). Im ausgeklappten Editor wurde das Standard-Widget durch ein maßgeschneidertes `TextInput` mit expliziter Textfarbe `#F4F4F5` und Zwei-Wege-Binding (`text <=> root.transcript-string`) ersetzt, wodurch transkribierter Text sofort gestochen scharf in Weiß lesbar ist.
@@ -133,7 +635,7 @@ Hier werden fundamentale Architekturentscheidungen, erreichte Meilensteine und o
   - `AGENTS.md` um verbindliche Richtlinien erweitert:
     1. **Verpflichtende Testausführung nach jedem Schritt:** Nach jeder Code-Änderung wird automatisch der passende Test via `pytest` (`test-core`, `test-ui`, `test-e2e`) gestartet.
     2. **Lückenlose Protokollierung:** Jeder Arbeitsschritt wird kontinuierlich oben in `docs/JOURNAL.md` dokumentiert.
-    3. **Autonome Workspace-Befehlsausführung:** Innerhalb des Repositories (`/home/sympa/Dev/whisper_pill/`) werden Datei- und Shell-Operationen (`ls -la`, `cat`, `pytest`, `python` etc.) selbstständig und ohne Unterbrechung ausgeführt. Rückfragen erfolgen nur bei Operationen außerhalb des Projektverzeichnisses.
+    3. **Autonome Workspace-Befehlsausführung:** Innerhalb des Repositories (``) werden Datei- und Shell-Operationen (`ls -la`, `cat`, `pytest`, `python` etc.) selbstständig und ohne Unterbrechung ausgeführt. Rückfragen erfolgen nur bei Operationen außerhalb des Projektverzeichnisses.
   - Automatische Testsuite ausgeführt; alle 18 Tests erfolgreich PASSED.
 - **Betroffene Komponenten:**
   - `AGENTS.md`

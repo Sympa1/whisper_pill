@@ -11,6 +11,7 @@ Erstelle präzise technische Dokumentationen für Entwickler nach folgenden Stan
 * **Format:** Reines GitHub-flavored Markdown.
 * **Ablageort:** `docs/architecture/` oder `docs/api/`.
 * **Inhalte:** Klassen- und Modulbeschreibungen, Datenflüsse, Zustandsübergänge und Thread-Architektur (Audio-Thread vs. UI-Thread).
+* **Datenschutz:** Keine absoluten Dateipfade des Entwickler-Dateisystems (wie `/home/...` oder `C:\Users\...`) verwenden; ausschließlich relative Repository-Pfade oder Modulbezeichner nutzen.
 
 ## 2. UML-Diagramme via Mermaid.js
 Binde Architekturpläne direkt als Mermaid-Codeblöcke ein:

@@ -66,18 +66,31 @@ component WaveformBar inherits Rectangle {
 }
 
 export component AppWindow inherits Window {
-    title: "whisper-pill";
+    title: "Whisper Pill";
     no-frame: true;
     background: transparent;
     always-on-top: true;
-    width: 480px;
-    height: is-expanded ? 240px : 48px;
+    width: is-settings ? 580px : 520px;
+    height: is-settings ? 480px : (is-expanded ? 240px : 48px);
 
     // Zustandsvariablen: 0: Idle, 1: Recording, 2: Processing, 3: Ready, 4: Expanded
-    in-out property <int> current-state: 1;
+    in-out property <int> current-state: 0;
     in-out property <bool> is-expanded: false;
-    in-out property <string> timer-string: "00:04";
+    in-out property <bool> is-settings: false;
+    in-out property <string> timer-string: "00:00";
     in-out property <string> transcript-string: "";
+
+    // Einstellungs-Properties
+    in-out property <bool> autostart-enabled: true;
+    in-out property <string> selected-model: "small";
+    in-out property <bool> normalize-audio-enabled: true;
+    in-out property <bool> beam-search-enabled: true;
+    in-out property <bool> base-model-available: true;
+    in-out property <bool> small-model-available: false;
+
+    // Callbacks für Einstellungen
+    callback save-settings(bool, string, bool, bool);
+    callback cancel-settings();
 
     // Hoehen der 11 Wellenform-Balken
     in-out property <length> bar0: 4px;
@@ -96,198 +109,218 @@ export component AppWindow inherits Window {
     callback start-recording();
     callback stop-recording();
     callback resume-recording();
+    callback new-recording();
     callback toggle-details();
     callback copy-text();
     callback dismiss();
     callback quit-app();
 
     capsule := Rectangle {
-        width: 480px;
-        height: root.is-expanded ? 240px : 48px;
-        background: #18181be6; // rgba(24, 24, 27, 0.95)
-        border-radius: root.is-expanded ? 16px : 24px;
+        width: root.is-settings ? 580px : 520px;
+        height: root.is-settings ? 480px : (root.is-expanded ? 240px : 48px);
+        background: root.is-settings ? #18181b : #18181be6;
+        border-radius: (root.is-expanded || root.is-settings) ? 16px : 24px;
         border-width: 1px;
-        border-color: #ffffff1f; // rgba(255, 255, 255, 0.12)
+        border-color: root.is-settings ? #2e2e34 : #ffffff1f;
         clip: true;
 
+        animate width { duration: 150ms; easing: ease-out; }
         animate height { duration: 150ms; easing: ease-out; }
         animate border-radius { duration: 150ms; easing: ease-out; }
 
         // ==========================================
-        // ZUSTAND 0: IDLE (Bereit zum Aufnehmen)
+        // KOMPAKTER ZUSTAND (Ziehbarer Kapsel-Bereich)
         // ==========================================
-        if root.current-state == 0 && !root.is-expanded : Rectangle {
-            width: 480px;
+        if !root.is-expanded && !root.is-settings : WindowMoveArea {
+            width: 520px;
             height: 48px;
 
-            // Links: App-Titel
-            Text {
-                x: 20px;
-                y: 0px;
+            // ==========================================
+            // ZUSTAND 0: IDLE (Bereit zum Aufnehmen)
+            // ==========================================
+            if root.current-state == 0 : Rectangle {
+                width: 520px;
                 height: 48px;
-                text: "🎙 whisper-pill";
-                color: #e4e4e7;
-                font-size: 13px;
-                font-weight: 600;
-                vertical-alignment: center;
-            }
 
-            // Rechts: Start-Button
-            HorizontalLayout {
-                x: 480px - self.width - 20px;
-                y: (48px - 28px) / 2;
-                height: 28px;
-                alignment: end;
-
-                PillButton {
-                    text: "● Aufnehmen";
-                    bg-color: #ef4444;
-                    hover-color: #dc2626;
-                    text-color: #ffffff;
-                    clicked => { root.start-recording(); }
-                }
-            }
-        }
-
-        // ==========================================
-        // ZUSTAND 1: RECORDING (Aktive Aufnahme)
-        // ==========================================
-        if root.current-state == 1 && !root.is-expanded : Rectangle {
-            width: 480px;
-            height: 48px;
-
-            // Links: Roter REC-Indikator
-            Text {
-                x: 20px;
-                y: 0px;
-                height: 48px;
-                text: "● REC";
-                color: #ef4444;
-                font-size: 13px;
-                font-weight: 700;
-                vertical-alignment: center;
-            }
-
-            // Exakt mathematisch zentrierte Waveform bei x = (480 - 90) / 2 = 195px
-            waveform-container := Rectangle {
-                x: (480px - 90px) / 2;
-                y: (48px - 28px) / 2;
-                width: 90px;
-                height: 28px;
-
-                HorizontalLayout {
-                    alignment: center;
-                    spacing: 4px;
-                    WaveformBar { bar-height: root.bar0; }
-                    WaveformBar { bar-height: root.bar1; }
-                    WaveformBar { bar-height: root.bar2; }
-                    WaveformBar { bar-height: root.bar3; }
-                    WaveformBar { bar-height: root.bar4; }
-                    WaveformBar { bar-height: root.bar5; }
-                    WaveformBar { bar-height: root.bar6; }
-                    WaveformBar { bar-height: root.bar7; }
-                    WaveformBar { bar-height: root.bar8; }
-                    WaveformBar { bar-height: root.bar9; }
-                    WaveformBar { bar-height: root.bar10; }
-                }
-            }
-
-            // Rechts: Zeitanzeige und Stop-Button
-            HorizontalLayout {
-                x: 480px - self.width - 20px;
-                y: (48px - 28px) / 2;
-                height: 28px;
-                spacing: 12px;
-                alignment: end;
-
+                // Links: App-Titel
                 Text {
-                    text: root.timer-string;
-                    color: #a1a1aa;
+                    x: 20px;
+                    y: 0px;
+                    height: 48px;
+                    text: "🎙 Whisper Pill";
+                    color: #e4e4e7;
                     font-size: 13px;
-                    font-family: "monospace";
                     font-weight: 600;
                     vertical-alignment: center;
                 }
 
-                PillButton {
-                    text: "■ Stop";
-                    bg-color: #3f3f46;
-                    hover-color: #52525b;
-                    text-color: #fafafa;
-                    clicked => { root.stop-recording(); }
+                // Rechts: Start-Button
+                HorizontalLayout {
+                    x: 520px - self.width - 20px;
+                    y: (48px - 28px) / 2;
+                    height: 28px;
+                    alignment: end;
+
+                    PillButton {
+                        text: "● Aufnehmen";
+                        bg-color: #ef4444;
+                        hover-color: #dc2626;
+                        text-color: #ffffff;
+                        clicked => { root.start-recording(); }
+                    }
                 }
             }
-        }
 
-        // ==========================================
-        // ZUSTAND 2: PROCESSING (Inferenz)
-        // ==========================================
-        if root.current-state == 2 && !root.is-expanded : Rectangle {
-            width: 480px;
-            height: 48px;
-
-            Text {
-                x: 20px;
-                y: 0px;
+            // ==========================================
+            // ZUSTAND 1: RECORDING (Aktive Aufnahme)
+            // ==========================================
+            if root.current-state == 1 : Rectangle {
+                width: 520px;
                 height: 48px;
-                text: "⟳ Transkribiere Audiosignal...";
-                color: #38bdf8;
-                font-size: 13px;
-                font-weight: 600;
-                vertical-alignment: center;
+
+                // Links: Roter REC-Indikator
+                Text {
+                    x: 20px;
+                    y: 0px;
+                    height: 48px;
+                    text: "● REC";
+                    color: #ef4444;
+                    font-size: 13px;
+                    font-weight: 700;
+                    vertical-alignment: center;
+                }
+
+                // Exakt mathematisch zentrierte Waveform bei x = (520 - 90) / 2 = 215px
+                waveform-container := Rectangle {
+                    x: (520px - 90px) / 2;
+                    y: (48px - 28px) / 2;
+                    width: 90px;
+                    height: 28px;
+
+                    HorizontalLayout {
+                        alignment: center;
+                        spacing: 4px;
+                        WaveformBar { bar-height: root.bar0; }
+                        WaveformBar { bar-height: root.bar1; }
+                        WaveformBar { bar-height: root.bar2; }
+                        WaveformBar { bar-height: root.bar3; }
+                        WaveformBar { bar-height: root.bar4; }
+                        WaveformBar { bar-height: root.bar5; }
+                        WaveformBar { bar-height: root.bar6; }
+                        WaveformBar { bar-height: root.bar7; }
+                        WaveformBar { bar-height: root.bar8; }
+                        WaveformBar { bar-height: root.bar9; }
+                        WaveformBar { bar-height: root.bar10; }
+                    }
+                }
+
+                // Rechts: Zeitanzeige und Stop-Button
+                HorizontalLayout {
+                    x: 520px - self.width - 20px;
+                    y: (48px - 28px) / 2;
+                    height: 28px;
+                    spacing: 12px;
+                    alignment: end;
+
+                    Text {
+                        text: root.timer-string;
+                        color: #a1a1aa;
+                        font-size: 13px;
+                        font-family: "monospace";
+                        font-weight: 600;
+                        vertical-alignment: center;
+                    }
+
+                    PillButton {
+                        text: "■ Stop";
+                        bg-color: #3f3f46;
+                        hover-color: #52525b;
+                        text-color: #fafafa;
+                        clicked => { root.stop-recording(); }
+                    }
+                }
             }
-        }
 
-        // ==========================================
-        // ZUSTAND 3: READY (Kopiert & Schnellaktionen)
-        // ==========================================
-        if root.current-state == 3 && !root.is-expanded : Rectangle {
-            width: 480px;
-            height: 48px;
-
-            // Links: Erfolgsmeldung in Gruen (reichlich Platz auf 480px Breite)
-            Text {
-                x: 20px;
-                y: 0px;
+            // ==========================================
+            // ZUSTAND 2: PROCESSING (Inferenz)
+            // ==========================================
+            if root.current-state == 2 : Rectangle {
+                width: 520px;
                 height: 48px;
-                text: "✔ In Zwischenablage kopiert!";
-                color: #22c55e;
-                font-size: 13px;
-                font-weight: 600;
-                vertical-alignment: center;
+
+                Text {
+                    x: 20px;
+                    y: 0px;
+                    height: 48px;
+                    text: "⟳ Transkribiere Audiosignal...";
+                    color: #38bdf8;
+                    font-size: 13px;
+                    font-weight: 600;
+                    vertical-alignment: center;
+                }
             }
 
-            // Rechts: Aktionen
-            HorizontalLayout {
-                x: 480px - self.width - 20px;
-                y: (48px - 28px) / 2;
-                height: 28px;
-                spacing: 8px;
-                alignment: end;
+            // ==========================================
+            // ZUSTAND 3: READY (Kopiert & Schnellaktionen)
+            // ==========================================
+            if root.current-state == 3 : Rectangle {
+                width: 520px;
+                height: 48px;
 
-                PillButton {
-                    text: "+ Weiter";
-                    bg-color: #38bdf826;
-                    hover-color: #38bdf840;
-                    text-color: #38bdf8;
-                    border-w: 1px;
-                    border-c: #38bdf866;
-                    clicked => { root.resume-recording(); }
+                // Links: Erfolgsmeldung in Gruen (reichlich Platz auf 520px Breite)
+                Text {
+                    x: 20px;
+                    y: 0px;
+                    height: 48px;
+                    text: "✔ In Zwischenablage kopiert!";
+                    color: #22c55e;
+                    font-size: 13px;
+                    font-weight: 600;
+                    vertical-alignment: center;
                 }
 
-                PillButton {
-                    text: "↗ Details";
-                    bg-color: #27272a;
-                    hover-color: #3f3f46;
-                    text-color: #e4e4e7;
-                    border-w: 1px;
-                    border-c: #ffffff1a;
-                    clicked => { root.toggle-details(); }
-                }
+                // Rechts: Aktionen
+                HorizontalLayout {
+                    x: 520px - self.width - 20px;
+                    y: (48px - 28px) / 2;
+                    height: 28px;
+                    spacing: 6px;
+                    alignment: end;
 
-                IconButton {
-                    icon-text: "✕";
-                    clicked => { root.dismiss(); }
+                    PillButton {
+                        text: "+ Weiter";
+                        bg-color: #38bdf826;
+                        hover-color: #38bdf840;
+                        text-color: #38bdf8;
+                        border-w: 1px;
+                        border-c: #38bdf866;
+                        clicked => { root.resume-recording(); }
+                    }
+
+                    PillButton {
+                        text: "● Neu";
+                        bg-color: #ef444426;
+                        hover-color: #ef444440;
+                        text-color: #f87171;
+                        border-w: 1px;
+                        border-c: #ef444459;
+                        clicked => { root.new-recording(); }
+                    }
+
+                    PillButton {
+                        text: "↗ Details";
+                        bg-color: #27272a;
+                        hover-color: #3f3f46;
+                        text-color: #e4e4e7;
+                        border-w: 1px;
+                        border-c: #ffffff1a;
+                        clicked => { root.toggle-details(); }
+                    }
+
+                    IconButton {
+                        icon-text: "✕";
+                        clicked => { root.dismiss(); }
+                    }
                 }
             }
         }
@@ -295,16 +328,19 @@ export component AppWindow inherits Window {
         // ==========================================
         // ZUSTAND 4: EXPANDED (Text-Editor & Review)
         // ==========================================
-        if root.is-expanded : VerticalLayout {
+        if root.is-expanded && !root.is-settings : VerticalLayout {
             padding-left: 16px;
             padding-right: 16px;
             padding-top: 12px;
             padding-bottom: 12px;
             spacing: 10px;
 
-            // Kopfzeile
-            HorizontalLayout {
-                alignment: space-between;
+            // Kopfzeile als ziehbarer Bereich
+            WindowMoveArea {
+                height: 28px;
+
+                HorizontalLayout {
+                    alignment: space-between;
 
                 HorizontalLayout {
                     spacing: 8px;
@@ -319,7 +355,7 @@ export component AppWindow inherits Window {
                     }
 
                     PillButton {
-                        text: "✕ Verbergen";
+                        text: "– Verbergen";
                         bg-color: #27272a;
                         hover-color: #3f3f46;
                         text-color: #e4e4e7;
@@ -329,7 +365,7 @@ export component AppWindow inherits Window {
                     }
 
                     PillButton {
-                        text: "⏻ Beenden";
+                        text: "✕ Beenden";
                         bg-color: #ef444426;
                         hover-color: #ef4444;
                         text-color: #f87171;
@@ -347,8 +383,9 @@ export component AppWindow inherits Window {
                     clicked => { root.copy-text(); }
                 }
             }
+        }
 
-            // Dunkler Texteditor mit heller Schrift (#F4F4F5), voller Breite und Zwei-Wege-Binding
+            // Dunkler Texteditor mit sichtbarer Scrollbar fuer lange Transkripte
             Rectangle {
                 background: #18181b;
                 border-radius: 12px;
@@ -356,18 +393,486 @@ export component AppWindow inherits Window {
                 border-color: #ffffff1f;
                 clip: true;
 
-                TextInput {
-                    x: 12px;
-                    y: 10px;
-                    width: parent.width - 24px;
-                    height: parent.height - 20px;
-                    text <=> root.transcript-string;
-                    color: #f4f4f5; // Hellweiss auf dunklem Hintergrund
-                    selection-background-color: #38bdf840;
-                    selection-foreground-color: #ffffff;
-                    font-size: 13px;
-                    wrap: word-wrap;
-                    single-line: false;
+                editor-flickable := Flickable {
+                    x: 10px;
+                    y: 8px;
+                    width: parent.width - 26px;
+                    height: parent.height - 16px;
+                    content-height: max(self.height, transcript-input.preferred-height + 20px);
+
+                    transcript-input := TextInput {
+                        width: parent.width;
+                        text <=> root.transcript-string;
+                        color: #f4f4f5; // Hellweiss auf dunklem Hintergrund
+                        selection-background-color: #38bdf840;
+                        selection-foreground-color: #ffffff;
+                        font-size: 13px;
+                        wrap: word-wrap;
+                        single-line: false;
+                    }
+                }
+
+                // Sichtbare, elegante Scrollbar (erscheint bei langem Transkript)
+                if editor-flickable.content-height > editor-flickable.height : Rectangle {
+                    x: parent.width - 12px;
+                    y: 8px;
+                    width: 6px;
+                    height: parent.height - 16px;
+                    background: #27272a;
+                    border-radius: 3px;
+
+                    // Scrollbar-Daumen
+                    thumb := Rectangle {
+                        width: 6px;
+                        height: max(24px, parent.height * (editor-flickable.height / editor-flickable.content-height));
+                        y: (parent.height - self.height) * (-editor-flickable.content-y / (editor-flickable.content-height - editor-flickable.height));
+                        border-radius: 3px;
+                        background: scroll-touch.has-hover ? #38bdf8 : #52525b;
+                        animate background { duration: 100ms; }
+                    }
+
+                    scroll-touch := TouchArea {
+                        property <length> press-y;
+                        property <length> initial-y;
+
+                        pointer-event(event) => {
+                            if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
+                                self.press-y = self.mouse-y;
+                                self.initial-y = editor-flickable.content-y;
+                            }
+                        }
+
+                        moved => {
+                            if (self.pressed && (parent.height - thumb.height) > 0px) {
+                                editor-flickable.content-y = max(
+                                    -(editor-flickable.content-height - editor-flickable.height),
+                                    min(0px, self.initial-y - (self.mouse-y - self.press-y) * ((editor-flickable.content-height - editor-flickable.height) / (parent.height - thumb.height)))
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ==========================================
+        // EINSTELLUNGS-MODUS (Integrierter Dialog)
+        // ==========================================
+        if root.is-settings : WindowMoveArea {
+            width: 580px;
+            height: 480px;
+
+            VerticalLayout {
+                padding-left: 20px;
+                padding-right: 20px;
+                padding-top: 16px;
+                padding-bottom: 16px;
+                spacing: 12px;
+
+                // Kopfzeile mit deutlichem Zieh-Griff und Schliessen-Button
+                Rectangle {
+                    height: 38px;
+                    background: #202024;
+                    border-radius: 10px;
+                    border-width: 1px;
+                    border-color: #2e2e36;
+
+                    HorizontalLayout {
+                        padding-left: 14px;
+                        padding-right: 10px;
+                        alignment: space-between;
+
+                        HorizontalLayout {
+                            spacing: 8px;
+                            y: (38px - self.height) / 2;
+
+                            Text {
+                                text: "⠿ ⚙ Whisper Pill Einstellungen";
+                                color: #fafafa;
+                                font-size: 13px;
+                                font-weight: 700;
+                                vertical-alignment: center;
+                            }
+                            Text {
+                                text: "(Ziehen zum Verschieben)";
+                                color: #71717a;
+                                font-size: 11px;
+                                vertical-alignment: center;
+                            }
+                        }
+
+                        IconButton {
+                            icon-text: "✕";
+                            clicked => { root.cancel-settings(); }
+                        }
+                    }
+                }
+
+                // 1. Autostart
+                Rectangle {
+                    height: 54px;
+                    background: touch-autostart.has-hover ? #25252a : #202024;
+                    border-radius: 10px;
+                    border-width: 1px;
+                    border-color: root.autostart-enabled ? #38bdf888 : #27272a;
+                    animate background { duration: 100ms; }
+
+                    HorizontalLayout {
+                        padding-left: 16px;
+                        padding-right: 16px;
+                        spacing: 14px;
+
+                        // Vertikal zentrierte Checkbox
+                        VerticalLayout {
+                            alignment: center;
+                            Rectangle {
+                                width: 22px;
+                                height: 22px;
+                                border-radius: 6px;
+                                border-width: 1.5px;
+                                border-color: root.autostart-enabled ? #38bdf8 : (touch-autostart.has-hover ? #71717a : #52525b);
+                                background: root.autostart-enabled ? #38bdf8 : #18181b;
+                                animate background { duration: 100ms; }
+                                animate border-color { duration: 100ms; }
+
+                                Text {
+                                    text: root.autostart-enabled ? "✔" : "";
+                                    color: #09090b;
+                                    font-size: 13px;
+                                    font-weight: 800;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+
+                        // Vertikal zentrierter Textbereich
+                        VerticalLayout {
+                            alignment: center;
+                            spacing: 3px;
+
+                            Text {
+                                text: "Mit dem System starten (Autostart)";
+                                color: #fafafa;
+                                font-size: 13px;
+                                font-weight: 600;
+                            }
+                            Text {
+                                text: "Startet Whisper Pill automatisch im Hintergrund bei der Anmeldung.";
+                                color: #a1a1aa;
+                                font-size: 11px;
+                            }
+                        }
+                    }
+
+                    touch-autostart := TouchArea {
+                        clicked => { root.autostart-enabled = !root.autostart-enabled; }
+                    }
+                }
+
+                // 2. KI-Modell (base vs small)
+                VerticalLayout {
+                    spacing: 6px;
+                    Text {
+                        text: "KI-Sprachmodell (Einfluss auf Genauigkeit bei Nuscheln):";
+                        color: #e4e4e7;
+                        font-size: 12px;
+                        font-weight: 600;
+                    }
+
+                    HorizontalLayout {
+                        spacing: 10px;
+
+                        // Option: Base Modell
+                        Rectangle {
+                            horizontal-stretch: 1;
+                            height: 72px;
+                            background: root.selected-model == "base" ? #1e293b : #202024;
+                            border-radius: 10px;
+                            border-width: 1px;
+                            border-color: root.selected-model == "base" ? #38bdf8 : #27272a;
+
+                            VerticalLayout {
+                                padding-left: 12px;
+                                padding-right: 12px;
+                                padding-top: 10px;
+                                padding-bottom: 10px;
+                                spacing: 4px;
+                                HorizontalLayout {
+                                    alignment: space-between;
+                                    Text {
+                                        text: root.selected-model == "base" ? "● base" : "○ base";
+                                        color: root.selected-model == "base" ? #38bdf8 : #fafafa;
+                                        font-size: 13px;
+                                        font-weight: 600;
+                                    }
+                                    Rectangle {
+                                        height: 18px;
+                                        width: base-badge.preferred-width + 12px;
+                                        background: root.base-model-available ? #22c55e1f : #38bdf81f;
+                                        border-radius: 9px;
+                                        border-width: 1px;
+                                        border-color: root.base-model-available ? #22c55e4d : #38bdf84d;
+
+                                        base-badge := Text {
+                                            text: root.base-model-available ? "Bereit" : "Auto-Download";
+                                            color: root.base-model-available ? #4ade80 : #38bdf8;
+                                            font-size: 10px;
+                                            font-weight: 600;
+                                            horizontal-alignment: center;
+                                            vertical-alignment: center;
+                                        }
+                                    }
+                                }
+                                Text {
+                                    text: "Schnell & leicht (~140 MB). Ausreichend bei klarer Aussprache.";
+                                    color: #a1a1aa;
+                                    font-size: 11px;
+                                    wrap: word-wrap;
+                                }
+                            }
+
+                            TouchArea {
+                                clicked => { root.selected-model = "base"; }
+                            }
+                        }
+
+                        // Option: Small Modell
+                        Rectangle {
+                            horizontal-stretch: 1;
+                            height: 72px;
+                            background: root.selected-model == "small" ? #1e293b : #202024;
+                            border-radius: 10px;
+                            border-width: 1px;
+                            border-color: root.selected-model == "small" ? #38bdf8 : #27272a;
+
+                            VerticalLayout {
+                                padding-left: 12px;
+                                padding-right: 12px;
+                                padding-top: 10px;
+                                padding-bottom: 10px;
+                                spacing: 4px;
+                                HorizontalLayout {
+                                    alignment: space-between;
+                                    Text {
+                                        text: root.selected-model == "small" ? "★ small (Empfohlen)" : "☆ small";
+                                        color: root.selected-model == "small" ? #38bdf8 : #fafafa;
+                                        font-size: 13px;
+                                        font-weight: 600;
+                                    }
+                                    Rectangle {
+                                        height: 18px;
+                                        width: small-badge.preferred-width + 12px;
+                                        background: root.small-model-available ? #22c55e1f : #38bdf81f;
+                                        border-radius: 9px;
+                                        border-width: 1px;
+                                        border-color: root.small-model-available ? #22c55e4d : #38bdf84d;
+
+                                        small-badge := Text {
+                                            text: root.small-model-available ? "Bereit" : "Auto-Download";
+                                            color: root.small-model-available ? #4ade80 : #38bdf8;
+                                            font-size: 10px;
+                                            font-weight: 600;
+                                            horizontal-alignment: center;
+                                            vertical-alignment: center;
+                                        }
+                                    }
+                                }
+                                Text {
+                                    text: "Beste Erkennung bei Nuscheln & Dialekt (~460 MB).";
+                                    color: #a1a1aa;
+                                    font-size: 11px;
+                                    wrap: word-wrap;
+                                }
+                            }
+
+                            TouchArea {
+                                clicked => { root.selected-model = "small"; }
+                            }
+                        }
+                    }
+                }
+
+                // 3. Audio-Pegelanpassung (Gain/Normalisierung)
+                Rectangle {
+                    height: 54px;
+                    background: touch-gain.has-hover ? #25252a : #202024;
+                    border-radius: 10px;
+                    border-width: 1px;
+                    border-color: root.normalize-audio-enabled ? #38bdf888 : #27272a;
+                    animate background { duration: 100ms; }
+
+                    HorizontalLayout {
+                        padding-left: 16px;
+                        padding-right: 16px;
+                        spacing: 14px;
+
+                        // Vertikal zentrierte Checkbox
+                        VerticalLayout {
+                            alignment: center;
+                            Rectangle {
+                                width: 22px;
+                                height: 22px;
+                                border-radius: 6px;
+                                border-width: 1.5px;
+                                border-color: root.normalize-audio-enabled ? #38bdf8 : (touch-gain.has-hover ? #71717a : #52525b);
+                                background: root.normalize-audio-enabled ? #38bdf8 : #18181b;
+                                animate background { duration: 100ms; }
+                                animate border-color { duration: 100ms; }
+
+                                Text {
+                                    text: root.normalize-audio-enabled ? "✔" : "";
+                                    color: #09090b;
+                                    font-size: 13px;
+                                    font-weight: 800;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+
+                        // Vertikal zentrierter Textbereich
+                        VerticalLayout {
+                            alignment: center;
+                            spacing: 3px;
+
+                            Text {
+                                text: "Automatische Lautstärkeanpassung (Gain)";
+                                color: #fafafa;
+                                font-size: 13px;
+                                font-weight: 600;
+                            }
+                            Text {
+                                text: "Hebt leise Sprache an, damit Whisper auch Nuscheln versteht.";
+                                color: #a1a1aa;
+                                font-size: 11px;
+                            }
+                        }
+                    }
+
+                    touch-gain := TouchArea {
+                        clicked => { root.normalize-audio-enabled = !root.normalize-audio-enabled; }
+                    }
+                }
+
+                // 4. Erkennungs-Modus (Greedy vs Beam Search)
+                VerticalLayout {
+                    spacing: 6px;
+                    Text {
+                        text: "Erkennungs-Modus (Suchstrategie):";
+                        color: #e4e4e7;
+                        font-size: 12px;
+                        font-weight: 600;
+                    }
+
+                    HorizontalLayout {
+                        spacing: 10px;
+
+                        // Option: Schnell (Greedy)
+                        Rectangle {
+                            horizontal-stretch: 1;
+                            height: 72px;
+                            background: !root.beam-search-enabled ? #1e293b : #202024;
+                            border-radius: 10px;
+                            border-width: 1px;
+                            border-color: !root.beam-search-enabled ? #38bdf8 : #27272a;
+
+                            VerticalLayout {
+                                padding-left: 12px;
+                                padding-right: 12px;
+                                padding-top: 10px;
+                                padding-bottom: 10px;
+                                spacing: 4px;
+                                Text {
+                                    text: !root.beam-search-enabled ? "● Schnell (Greedy)" : "○ Schnell (Greedy)";
+                                    color: !root.beam-search-enabled ? #38bdf8 : #fafafa;
+                                    font-size: 13px;
+                                    font-weight: 600;
+                                }
+                                Text {
+                                    text: "Blitzschnell ohne Verzögerung. Wählt sofort das naheliegendste Wort.";
+                                    color: #a1a1aa;
+                                    font-size: 11px;
+                                    wrap: word-wrap;
+                                }
+                            }
+
+                            TouchArea {
+                                clicked => { root.beam-search-enabled = false; }
+                            }
+                        }
+
+                        // Option: Gründlich (Beam Search)
+                        Rectangle {
+                            horizontal-stretch: 1;
+                            height: 72px;
+                            background: root.beam-search-enabled ? #1e293b : #202024;
+                            border-radius: 10px;
+                            border-width: 1px;
+                            border-color: root.beam-search-enabled ? #38bdf8 : #27272a;
+
+                            VerticalLayout {
+                                padding-left: 12px;
+                                padding-right: 12px;
+                                padding-top: 10px;
+                                padding-bottom: 10px;
+                                spacing: 4px;
+                                Text {
+                                    text: root.beam-search-enabled ? "★ Gründlich (Beam Search)" : "☆ Gründlich (Beam Search)";
+                                    color: root.beam-search-enabled ? #38bdf8 : #fafafa;
+                                    font-size: 13px;
+                                    font-weight: 600;
+                                }
+                                Text {
+                                    text: "Parallele Hypothesenprüfung für höchste Präzision (+0,2s).";
+                                    color: #a1a1aa;
+                                    font-size: 11px;
+                                    wrap: word-wrap;
+                                }
+                            }
+
+                            TouchArea {
+                                clicked => { root.beam-search-enabled = true; }
+                            }
+                        }
+                    }
+                }
+
+                // Trennlinie
+                Rectangle {
+                    height: 1px;
+                    background: #27272a;
+                }
+
+                // Aktionsleiste (Footer)
+                HorizontalLayout {
+                    alignment: end;
+                    spacing: 10px;
+
+                    PillButton {
+                        text: "Abbrechen";
+                        bg-color: #27272a;
+                        hover-color: #3f3f46;
+                        text-color: #e4e4e7;
+                        border-w: 1px;
+                        border-c: #ffffff1a;
+                        clicked => { root.cancel-settings(); }
+                    }
+
+                    PillButton {
+                        text: "Speichern & Übernehmen";
+                        bg-color: #38bdf8;
+                        hover-color: #0ea5e9;
+                        text-color: #09090b;
+                        clicked => {
+                            root.save-settings(
+                                root.autostart-enabled,
+                                root.selected-model,
+                                root.normalize-audio-enabled,
+                                root.beam-search-enabled
+                            );
+                        }
+                    }
                 }
             }
         }

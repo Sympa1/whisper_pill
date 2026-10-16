@@ -1,8 +1,8 @@
 # UI & State Machine Testbericht: whisper-pill
 
 - **Datum & Uhrzeit:** 2026-09-20 08:19:00
-- **Plattform:** Linux (Manjaro Linux rolling / Kernel 6.x)
-- **Komponente:** PySide6 Pill-UI (`prototype/ui/pill_window.py`, `prototype/ui/waveform_widget.py`)
+- **Plattform:** Linux
+- **Komponente:** Pill-UI (PillWindow, WaveformWidget)
 - **Gesamtergebnis:** PASSED (4/4 UI-Tests erfolgreich)
 
 ## 1. Ausgefuehrte UI-Test-Suiten

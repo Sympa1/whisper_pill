@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Whisper Pill
+GenericName=Sprachdiktat & Transkription
+Comment=Schlankes, minimalistisches Desktop-Diktier-Utility (Pill-UI)
+Exec=whisper_pill
+Icon=whisper-pill
+Terminal=false
+Type=Application
+Categories=Utility;AudioVideo;Audio;Recorder;
+StartupNotify=true
+StartupWMClass=whisper_pill
+Keywords=whisper;dictation;transcription;speech-to-text;audio;audio-recorder;

@@ -24,7 +24,9 @@ Führe bei Aktivierung dieses Skills die vollständige Testkette unter realität
 * **OS-Clipboard & UI:** Prüfe via `pyperclip`, ob der identische Text in der System-Zwischenablage ankommt und das Pill-Fenster den Status `Ready / Copied` anzeigt.
 
 ## 3. Dokumentations-Bericht generieren
-Erstelle oder aktualisiere nach jedem Durchlauf zwingend die Datei `docs/e2e_test_report.md` nach folgendem Standard:
+Erstelle oder aktualisiere nach jedem Durchlauf zwingend die Datei `docs/e2e_test_report.md` nach folgendem Standard.
+
+> **Wichtig (Datenschutz & Public-Repo-Konformität):** In den Berichten dürfen **keine Dateipfade** aufgeführt werden. Verwende ausschließlich Komponenten- und Schrittbezeichnungen.
 
 ```markdown
 # E2E System-Testbericht: whisper-pill
