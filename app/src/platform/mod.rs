@@ -5,7 +5,9 @@
 pub mod autostart;
 pub mod clipboard;
 pub mod hotkey;
+pub mod installer;
 pub mod kwin;
 #[cfg(target_os = "linux")]
 pub mod tray;
+
 

@@ -47,6 +47,11 @@ Aktiviert per Hotkey (<kbd>Super</kbd> + <kbd>Strg</kbd> + <kbd>P</kbd>) oder Kl
 
 ![Einstellungen](docs/assets/state_4_settings.png)
 
+### 6. Grafischer Installations-Assistent (Setup-Wizard für Windows & Linux)
+Mit `--installer` (oder als eigenständige `whisper_pill_installer` / `Whisper_Pill_Setup_Wizard.exe`) öffnet sich der 4-stufige Setup-Wizard (`640 × 480 px`) zur Einrichtung von Zielverzeichnis, Desktop-/Startmenü-Verknüpfungen, Autostart und Uninstaller:
+
+![Installations-Assistent](docs/assets/state_5_installer.png)
+
 ---
 
 ## Highlights

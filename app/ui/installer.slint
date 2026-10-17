@@ -1,0 +1,499 @@
+// Grafischer Installations-Assistent (Setup-Wizard) fuer Whisper Pill (Windows & Linux)
+
+component WizardButton inherits Rectangle {
+    in property <string> text;
+    in property <color> bg-color: #27272a;
+    in property <color> hover-color: #3f3f46;
+    in property <color> text-color: #fafafa;
+    in property <bool> enabled: true;
+    in property <length> border-w: 1px;
+    in property <color> border-c: #3f3f46;
+    callback clicked();
+
+    width: label.preferred-width + 32px;
+    height: 36px;
+    background: !root.enabled ? #18181b : (touch.has-hover ? root.hover-color : root.bg-color);
+    border-radius: 10px;
+    border-width: root.border-w;
+    border-color: !root.enabled ? #27272a : root.border-c;
+
+    label := Text {
+        text: root.text;
+        color: !root.enabled ? #52525b : root.text-color;
+        font-size: 13px;
+        font-weight: 600;
+        vertical-alignment: center;
+        horizontal-alignment: center;
+    }
+
+    touch := TouchArea {
+        enabled: root.enabled;
+        clicked => { root.clicked(); }
+    }
+}
+
+component WizardCheckRow inherits Rectangle {
+    in-out property <bool> checked: true;
+    in property <string> title;
+    in property <string> subtitle;
+
+    height: 54px;
+    background: row-touch.has-hover ? #202026 : #18181b;
+    border-radius: 10px;
+    border-width: 1px;
+    border-color: root.checked ? #38bdf866 : #2e2e36;
+
+    HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 14px;
+        spacing: 12px;
+
+        VerticalLayout {
+            alignment: center;
+            width: 22px;
+            Rectangle {
+                width: 20px;
+                height: 20px;
+                border-radius: 6px;
+                background: root.checked ? #38bdf8 : #27272a;
+                border-width: 1px;
+                border-color: root.checked ? #38bdf8 : #52525b;
+
+                Text {
+                    text: root.checked ? "✓" : "";
+                    color: #09090b;
+                    font-size: 13px;
+                    font-weight: 800;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+
+        VerticalLayout {
+            alignment: center;
+            spacing: 2px;
+            Text {
+                text: root.title;
+                color: #f4f4f5;
+                font-size: 13px;
+                font-weight: 600;
+            }
+            Text {
+                text: root.subtitle;
+                color: #a1a1aa;
+                font-size: 11px;
+            }
+        }
+    }
+
+    row-touch := TouchArea {
+        clicked => { root.checked = !root.checked; }
+    }
+}
+
+export component InstallerWindow inherits Window {
+    title: "Whisper Pill – Installations-Assistent";
+    width: 640px;
+    height: 480px;
+    background: #09090b;
+
+    // Wizard-Schritte: 0 = Willkommen & Lizenz, 1 = Optionen & Pfad, 2 = Installation, 3 = Fertig
+    in-out property <int> wizard-step: 0;
+    in-out property <bool> license-accepted: true;
+    in-out property <string> install-path: "C:\\Users\\Standard\\AppData\\Local\\Programs\\WhisperPill";
+    in-out property <bool> create-desktop-shortcut: true;
+    in-out property <bool> create-startmenu-shortcut: true;
+    in-out property <bool> enable-autostart: true;
+    in-out property <string> selected-model: "base";
+    in-out property <float> progress-value: 0.0;
+    in-out property <string> status-log: "Bereit zur Installation...";
+    in-out property <bool> launch-after-install: true;
+    in-out property <string> platform-label: "Windows / Linux Setup";
+
+    callback next-step();
+    callback prev-step();
+    callback start-installation();
+    callback finish-installer();
+    callback cancel-installer();
+
+    VerticalLayout {
+        padding: 20px;
+        spacing: 14px;
+
+        // ==========================================
+        // KOPFZEILE & SCHRITT-ANZEIGE
+        // ==========================================
+        Rectangle {
+            height: 64px;
+            background: #18181b;
+            border-radius: 12px;
+            border-width: 1px;
+            border-color: #2e2e36;
+
+            HorizontalLayout {
+                padding-left: 18px;
+                padding-right: 18px;
+                alignment: space-between;
+
+                VerticalLayout {
+                    alignment: center;
+                    spacing: 3px;
+                    Text {
+                        text: "🎙 Whisper Pill – Setup-Assistent";
+                        color: #f4f4f5;
+                        font-size: 16px;
+                        font-weight: 700;
+                    }
+                    Text {
+                        text: root.platform-label + " • Version 0.1.0 (100 % Lokal & MIT-Lizenz)";
+                        color: #38bdf8;
+                        font-size: 11px;
+                        font-weight: 600;
+                    }
+                }
+
+                // 4-Schritte-Indikator
+                HorizontalLayout {
+                    alignment: center;
+                    spacing: 6px;
+                    VerticalLayout {
+                        alignment: center;
+                        Rectangle {
+                            width: 26px;
+                            height: 26px;
+                            border-radius: 13px;
+                            background: root.wizard-step == 0 ? #38bdf8 : #10b981;
+                            Text {
+                                text: root.wizard-step > 0 ? "✓" : "1";
+                                color: #09090b;
+                                font-size: 12px;
+                                font-weight: 800;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Rectangle {
+                            width: 26px;
+                            height: 26px;
+                            border-radius: 13px;
+                            background: root.wizard-step == 1 ? #38bdf8 : (root.wizard-step > 1 ? #10b981 : #27272a);
+                            Text {
+                                text: root.wizard-step > 1 ? "✓" : "2";
+                                color: root.wizard-step >= 1 ? #09090b : #a1a1aa;
+                                font-size: 12px;
+                                font-weight: 800;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Rectangle {
+                            width: 26px;
+                            height: 26px;
+                            border-radius: 13px;
+                            background: root.wizard-step == 2 ? #38bdf8 : (root.wizard-step > 2 ? #10b981 : #27272a);
+                            Text {
+                                text: root.wizard-step > 2 ? "✓" : "3";
+                                color: root.wizard-step >= 2 ? #09090b : #a1a1aa;
+                                font-size: 12px;
+                                font-weight: 800;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Rectangle {
+                            width: 26px;
+                            height: 26px;
+                            border-radius: 13px;
+                            background: root.wizard-step == 3 ? #10b981 : #27272a;
+                            Text {
+                                text: "4";
+                                color: root.wizard-step == 3 ? #09090b : #a1a1aa;
+                                font-size: 12px;
+                                font-weight: 800;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ==========================================
+        // HAUPTINHALT JE NACH WIZARD-SCHRITT
+        // ==========================================
+        Rectangle {
+            vertical-stretch: 1;
+            background: #121215;
+            border-radius: 12px;
+            border-width: 1px;
+            border-color: #27272a;
+
+            // --- SCHRITT 0: WILLKOMMEN & LIZENZ ---
+            if root.wizard-step == 0 : VerticalLayout {
+                padding: 18px;
+                spacing: 12px;
+
+                Text {
+                    text: "Willkommen bei der Installation von Whisper Pill";
+                    color: #f4f4f5;
+                    font-size: 15px;
+                    font-weight: 700;
+                }
+
+                Text {
+                    text: "Dieser Assistent richtet Whisper Pill auf deinem Computer ein. Die Anwendung läuft ressourcenschonend im System-Tray und transkribiert Sprache zu 100 % offline auf deiner CPU direkt in die Zwischenablage.";
+                    color: #a1a1aa;
+                    font-size: 12px;
+                    wrap: word-wrap;
+                }
+
+                Rectangle {
+                    vertical-stretch: 1;
+                    background: #18181b;
+                    border-radius: 8px;
+                    border-width: 1px;
+                    border-color: #2e2e36;
+
+                    VerticalLayout {
+                        padding: 12px;
+                        spacing: 6px;
+                        Text {
+                            text: "MIT License – Copyright (c) 2026 whisper-pill contributors";
+                            color: #e4e4e7;
+                            font-size: 12px;
+                            font-weight: 700;
+                        }
+                        Text {
+                            text: "Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software.\n\nDatenschutz-Garantie: 100 % lokale Sprachverarbeitung via whisper.cpp ohne Cloud-Anbindung oder Telemetrie.";
+                            color: #a1a1aa;
+                            font-size: 11px;
+                            wrap: word-wrap;
+                        }
+                    }
+                }
+
+                WizardCheckRow {
+                    checked <=> root.license-accepted;
+                    title: "Ich akzeptiere die Bedingungen der MIT-Lizenzvereinbarung";
+                    subtitle: "Freie Nutzung, Weitergabe und Modifikation ausdrücklich gestattet.";
+                }
+            }
+
+            // --- SCHRITT 1: ZIELVERZEICHNIS & KOMPONENTEN ---
+            if root.wizard-step == 1 : VerticalLayout {
+                padding: 16px;
+                spacing: 10px;
+
+                Text {
+                    text: "Installationsort & Verknüpfungen auswählen";
+                    color: #f4f4f5;
+                    font-size: 14px;
+                    font-weight: 700;
+                }
+
+                // Zielpfad-Eingabe
+                Rectangle {
+                    height: 52px;
+                    background: #18181b;
+                    border-radius: 8px;
+                    border-width: 1px;
+                    border-color: #38bdf866;
+
+                    VerticalLayout {
+                        padding-left: 12px;
+                        padding-right: 12px;
+                        alignment: center;
+                        spacing: 2px;
+                        Text {
+                            text: "Zielverzeichnis:";
+                            color: #38bdf8;
+                            font-size: 10px;
+                            font-weight: 700;
+                        }
+                        TextInput {
+                            text <=> root.install-path;
+                            color: #f4f4f5;
+                            font-size: 12px;
+                            single-line: true;
+                        }
+                    }
+                }
+
+                WizardCheckRow {
+                    checked <=> root.create-desktop-shortcut;
+                    title: "Desktop-Verknüpfung erstellen";
+                    subtitle: "Legt ein Starter-Icon für Whisper Pill direkt auf dem Desktop an.";
+                }
+
+                WizardCheckRow {
+                    checked <=> root.create-startmenu-shortcut;
+                    title: "Eintrag im Startmenü / Anwendungsmenü anlegen";
+                    subtitle: "Ermöglicht das schnelle Starten über die Windows-Suche oder das Startmenü.";
+                }
+
+                WizardCheckRow {
+                    checked <=> root.enable-autostart;
+                    title: "Mit dem System starten (Autostart im System-Tray)";
+                    subtitle: "Startet Whisper Pill automatisch im Hintergrund und aktiviert den Hotkey (Win/Super + Strg + P).";
+                }
+            }
+
+            // --- SCHRITT 2: INSTALLATION LÄUFT ---
+            if root.wizard-step == 2 : VerticalLayout {
+                padding: 20px;
+                spacing: 14px;
+
+                Text {
+                    text: "Installation wird durchgeführt...";
+                    color: #f4f4f5;
+                    font-size: 15px;
+                    font-weight: 700;
+                }
+
+                // Fortschrittsbalken
+                Rectangle {
+                    height: 18px;
+                    background: #18181b;
+                    border-radius: 9px;
+                    border-width: 1px;
+                    border-color: #2e2e36;
+                    clip: true;
+
+                    Rectangle {
+                        x: 0px;
+                        y: 0px;
+                        width: parent.width * clamp(root.progress-value, 0.0, 1.0);
+                        height: parent.height;
+                        background: #38bdf8;
+                        border-radius: 9px;
+                    }
+                }
+
+                Rectangle {
+                    vertical-stretch: 1;
+                    background: #18181b;
+                    border-radius: 8px;
+                    border-width: 1px;
+                    border-color: #2e2e36;
+
+                    VerticalLayout {
+                        padding: 12px;
+                        Text {
+                            text: root.status-log;
+                            color: #e4e4e7;
+                            font-size: 12px;
+                            font-family: "monospace";
+                            wrap: word-wrap;
+                        }
+                    }
+                }
+            }
+
+            // --- SCHRITT 3: ABSCHLUSS ---
+            if root.wizard-step == 3 : VerticalLayout {
+                padding: 20px;
+                spacing: 14px;
+
+                Text {
+                    text: "✔ Whisper Pill wurde erfolgreich installiert!";
+                    color: #10b981;
+                    font-size: 16px;
+                    font-weight: 700;
+                }
+
+                Rectangle {
+                    vertical-stretch: 1;
+                    background: #18181b;
+                    border-radius: 8px;
+                    border-width: 1px;
+                    border-color: #10b98144;
+
+                    VerticalLayout {
+                        padding: 14px;
+                        spacing: 8px;
+                        Text {
+                            text: "Installations-Zusammenfassung:";
+                            color: #f4f4f5;
+                            font-size: 13px;
+                            font-weight: 700;
+                        }
+                        Text {
+                            text: "• Zielordner: " + root.install-path + "\n• Globaler Diktier-Shortcut: Win / Super + Strg + P\n• Einfügen des erkannten Textes: Strg + V\n• Deinstallation jederzeit über das mitgelieferte Uninstall-Skript möglich.";
+                            color: #a1a1aa;
+                            font-size: 12px;
+                            wrap: word-wrap;
+                        }
+                    }
+                }
+
+                WizardCheckRow {
+                    checked <=> root.launch-after-install;
+                    title: "Whisper Pill jetzt direkt starten";
+                    subtitle: "Startet die Anwendung nach dem Schließen des Assistenten im System-Tray.";
+                }
+            }
+        }
+
+        // ==========================================
+        // FUSSZEILE MIT NAVIGATION
+        // ==========================================
+        HorizontalLayout {
+            height: 38px;
+            alignment: space-between;
+
+            WizardButton {
+                text: "Abbrechen";
+                enabled: root.wizard-step < 3;
+                clicked => { root.cancel-installer(); }
+            }
+
+            HorizontalLayout {
+                spacing: 10px;
+
+                if root.wizard-step == 1 : WizardButton {
+                    text: "← Zurück";
+                    clicked => { root.prev-step(); }
+                }
+
+                if root.wizard-step == 0 : WizardButton {
+                    text: "Weiter →";
+                    bg-color: #38bdf8;
+                    hover-color: #0ea5e9;
+                    text-color: #09090b;
+                    border-w: 0px;
+                    enabled: root.license-accepted;
+                    clicked => { root.next-step(); }
+                }
+
+                if root.wizard-step == 1 : WizardButton {
+                    text: "Jetzt installieren";
+                    bg-color: #10b981;
+                    hover-color: #059669;
+                    text-color: #09090b;
+                    border-w: 0px;
+                    clicked => { root.start-installation(); }
+                }
+
+                if root.wizard-step == 3 : WizardButton {
+                    text: "✓ Fertigstellen";
+                    bg-color: #38bdf8;
+                    hover-color: #0ea5e9;
+                    text-color: #09090b;
+                    border-w: 0px;
+                    clicked => { root.finish-installer(); }
+                }
+            }
+        }
+    }
+}

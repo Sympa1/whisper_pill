@@ -4,6 +4,8 @@
 //! die Audio-Aufnahme, Sprachpausenerkennung (VAD), Whisper-Transkription,
 //! globale KDE-Hotkeys (Super+Strg+P) und System-Tray-Integration.
 
+#![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
+
 slint::include_modules!();
 
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -40,8 +42,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Optionen:");
         println!("  -h, --help                         Zeigt diese Hilfe an");
         println!("  -v, --version                      Zeigt die Versionsnummer an");
+        println!("  --installer                        Startet den grafischen Installations-Assistenten");
         println!("  --capture-screenshots [VERZEICHNIS] Erzeugt UI-Screenshots aller Kapselzustaende");
         return Ok(());
+    }
+    let is_installer_bin = s_args
+        .first()
+        .map(|s| {
+            let s_lower = s.to_lowercase();
+            s_lower.contains("installer") || s_lower.contains("setup")
+        })
+        .unwrap_or(false);
+    if is_installer_bin || s_args.iter().any(|arg| arg == "--installer") {
+        return run_installer_wizard();
     }
     if let Some(i_buffy_idx) = s_args.iter().position(|arg| arg == "--capture-screenshots") {
         let s_buffy_out_dir = s_args
@@ -819,7 +832,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
-    // 8. Slint Event-Loop ausfuehren (die Pill laeuft im Hintergrund und reagiert auf Tray/Hotkey)
+    // 8. Unter Windows die schwebende Pill beim Start direkt im Idle-Zustand einblenden
+    #[cfg(target_os = "windows")]
+    {
+        is_window_visible.store(true, Ordering::SeqCst);
+        let _ = app_window.show();
+    }
+
+    // 9. Slint Event-Loop ausfuehren (die Pill laeuft im Hintergrund und reagiert auf Tray/Hotkey)
     slint::run_event_loop_until_quit()?;
 
     Ok(())
@@ -839,9 +859,18 @@ fn run_screenshot_capture(out_dir: &std::path::Path) -> Result<(), Box<dyn std::
         .set_size(slint::LogicalSize::new(520.0, 48.0));
     app_window.show()?;
 
+    let installer_window = InstallerWindow::new()?;
+    installer_window.set_wizard_step(1);
+    installer_window.set_platform_label("Windows 10/11 & Linux Setup".into());
+    installer_window.set_install_path(
+        whisper_pill::platform::installer::default_windows_install_path_string().into(),
+    );
+    installer_window.show()?;
+
     let i_buffy_step = std::rc::Rc::new(std::cell::Cell::new(0u32));
     let out_path_buf = out_dir.to_path_buf();
     let window_weak = app_window.as_weak();
+    let installer_weak = installer_window.as_weak();
 
     let timer = slint::Timer::default();
     timer.start(
@@ -933,10 +962,20 @@ fn run_screenshot_capture(out_dir: &std::path::Path) -> Result<(), Box<dyn std::
                     win.window().set_size(slint::LogicalSize::new(580.0, 480.0));
                 }
                 4 => {
-                    // Einstellungs-Dialog speichern und beenden
+                    // Einstellungs-Dialog und Installations-Wizard speichern und beenden
                     if let Ok(buf) = win.window().take_snapshot() {
                         let _ = save_rgba_as_png(
                             &out_path_buf.join("state_4_settings.png"),
+                            buf.width(),
+                            buf.height(),
+                            buf.as_bytes(),
+                        );
+                    }
+                    if let Some(inst) = installer_weak.upgrade()
+                        && let Ok(buf) = inst.window().take_snapshot()
+                    {
+                        let _ = save_rgba_as_png(
+                            &out_path_buf.join("state_5_installer.png"),
                             buf.width(),
                             buf.height(),
                             buf.as_bytes(),
@@ -955,6 +994,96 @@ fn run_screenshot_capture(out_dir: &std::path::Path) -> Result<(), Box<dyn std::
         },
     );
 
+    slint::run_event_loop_until_quit()?;
+    Ok(())
+}
+
+/// Startet den interaktiven grafischen Installations-Assistenten (Setup-Wizard) fuer Windows & Linux.
+fn run_installer_wizard() -> Result<(), Box<dyn std::error::Error>> {
+    let wizard = InstallerWindow::new()?;
+    let default_dir = whisper_pill::platform::installer::default_install_dir();
+    wizard.set_install_path(default_dir.to_string_lossy().to_string().into());
+    wizard.set_platform_label(
+        if cfg!(target_os = "windows") {
+            "Windows 10/11 Setup"
+        } else {
+            "Desktop Setup (Windows / Linux)"
+        }
+        .into(),
+    );
+
+    {
+        let w_weak = wizard.as_weak();
+        wizard.on_next_step(move || {
+            if let Some(w) = w_weak.upgrade() {
+                let i_buffy_step = w.get_wizard_step();
+                if i_buffy_step < 3 {
+                    w.set_wizard_step(i_buffy_step + 1);
+                }
+            }
+        });
+    }
+
+    {
+        let w_weak = wizard.as_weak();
+        wizard.on_prev_step(move || {
+            if let Some(w) = w_weak.upgrade() {
+                let i_buffy_step = w.get_wizard_step();
+                if i_buffy_step > 0 {
+                    w.set_wizard_step(i_buffy_step - 1);
+                }
+            }
+        });
+    }
+
+    {
+        let w_weak = wizard.as_weak();
+        wizard.on_start_installation(move || {
+            if let Some(w) = w_weak.upgrade() {
+                w.set_wizard_step(2);
+                w.set_progress_value(0.25);
+                w.set_status_log("Starte Installation...".into());
+
+                let opts = whisper_pill::platform::installer::InstallOptions {
+                    target_dir: std::path::PathBuf::from(w.get_install_path().to_string()),
+                    create_desktop_shortcut: w.get_create_desktop_shortcut(),
+                    create_startmenu_shortcut: w.get_create_startmenu_shortcut(),
+                    enable_autostart: w.get_enable_autostart(),
+                };
+
+                match whisper_pill::platform::installer::perform_installation(&opts) {
+                    Ok(s_buffy_log) => {
+                        w.set_progress_value(1.0);
+                        w.set_status_log(s_buffy_log.into());
+                        w.set_wizard_step(3);
+                    }
+                    Err(err) => {
+                        w.set_progress_value(0.0);
+                        w.set_status_log(format!("FEHLER: {}", err).into());
+                    }
+                }
+            }
+        });
+    }
+
+    {
+        let w_weak = wizard.as_weak();
+        wizard.on_finish_installer(move || {
+            if let Some(w) = w_weak.upgrade()
+                && w.get_launch_after_install()
+                && let Ok(s_buffy_exe) = whisper_pill::platform::autostart::get_persistent_executable_path()
+            {
+                let _ = std::process::Command::new(s_buffy_exe).spawn();
+            }
+            let _ = slint::quit_event_loop();
+        });
+    }
+
+    wizard.on_cancel_installer(move || {
+        let _ = slint::quit_event_loop();
+    });
+
+    wizard.show()?;
     slint::run_event_loop_until_quit()?;
     Ok(())
 }

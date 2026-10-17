@@ -3,6 +3,30 @@
 Dieses Dokument dient als kontinuierliches Gedächtnis des Projekts. 
 Hier werden fundamentale Architekturentscheidungen, erreichte Meilensteine und offene Punkte chronologisch (neueste Einträge oben) dokumentiert.
 
+### 2026-10-17 - Phase 2: Grafischer Installations-Wizard (Rust & Slint Setup-Assistent) für Windows & Linux
+- **Entscheidung / Änderung:**
+  1. **Nativer 4-Schritte-Installations-Assistent in Rust & Slint (`InstallerWindow`, `app/ui/installer.slint`, `app/src/platform/installer.rs`):**
+     - Vollständig ohne systemweite Zusatzpakete im dunklen Whisper-Pill-Design (`640 × 480 px`) implementiert:
+       - *Schritt 1 (Willkommen & Lizenz):* Projektvorstellung und MIT-Lizenzvereinbarung mit Bestätigungs-Checkbox.
+       - *Schritt 2 (Zielverzeichnis & Verknüpfungen):* Frei wählbarer Installationspfad (Windows-Standard `%LOCALAPPDATA%\Programs\WhisperPill`, Linux-Standard `~/.local/share/whisper_pill/bin`), Checkboxen für Desktop-Verknüpfung (`.lnk` via VBScript bzw. `.desktop`), Startmenü-/Anwendungsmenü-Eintrag und System-Autostart (Windows Registry `HKCU\...\Run` bzw. XDG-Autostart).
+       - *Schritt 3 (Fortschritt & Installation):* Fortschrittsbalken mit Live-Protokollierung und automatischer Erzeugung eines Deinstallations-Skripts (`uninstall.cmd` bzw. `uninstall.sh`).
+       - *Schritt 4 (Abschluss):* Zusammenfassung und Option zum sofortigen Starten von Whisper Pill.
+     - Startbar über den CLI-Parameter `--installer` oder automatisch, wenn die ausführbare Datei `installer` bzw. `setup` im Namen trägt (`dist/whisper_pill_installer` / `Whisper_Pill_Setup_Wizard.exe`).
+     - Automatischer Screenshot-Export des Setup-Wizards nach `docs/assets/state_5_installer.png`.
+  2. **Klassisches NSIS-Installer-Skript & Build-Pipeline (`packaging/windows/installer.nsi`, `scripts/build_windows_installer.sh`):**
+     - Bereitstellung einer vollständigen deutschen MUI2-NSIS-Konfiguration für `Whisper_Pill_Setup_x86_64.exe` inklusive Registry-Uninstaller sowie eines kombinierten Build-Skripts.
+  3. **Tests:**
+     - 46 Rust-Unit-Tests (`cargo test`, inkl. 4 neuer Installer-Tests) PASSED.
+     - `cargo clippy --all-targets -- -D warnings` mit 0 Warnungen abgeschlossen.
+     - 19 Python-Unit-Tests (`pytest`) PASSED.
+- **Betroffene Komponenten:**
+  - `InstallerUI` (`app/ui/installer.slint`, `app/ui/appwindow.slint`)
+  - `InstallerPlatform` (`app/src/platform/installer.rs`, `app/src/main.rs`)
+  - `WindowsPackaging` (`packaging/windows/installer.nsi`, `scripts/build_windows_installer.sh`)
+  - `docs/JOURNAL.md`
+
+---
+
 ### 2026-10-17 - Phase 2: Sicherheits-Checkup (`SECURE`), Benutzer- & Technik-Dokumentation (Rust-App, AppImage, KDE & XFCE) sowie Nativer Slint-Screenshot-Generator
 - **Entscheidung / Änderung:**
   1. **Vollständiger Sicherheits-Checkup der Rust-App & des AppImages (`docs/security_audit_report.md`):**
