@@ -1,90 +1,103 @@
-# Sicherheits-Auditbericht: whisper-pill (Rust App)
+# Sicherheits-Auditbericht: Whisper Pill (Rust-App & AppImage)
 
-- **Datum & Uhrzeit:** 2026-09-27 08:34:00
-- **Gesamtbewertung:** **ACTION REQUIRED (Download-Fallback in Engine identifiziert)**
-- **Geprüfter Scope:** Rust-Anwendung (Quellcode, UI-Definitionen, Abhängigkeiten, Build-Konfiguration)
+- **Datum & Uhrzeit:** 2026-10-17 11:45:00
+- **Gesamtbewertung:** **SECURE (Alle Sicherheits-, Datenschutz- und Offline-Prüfungen bestanden)**
+- **Geprüfter Scope:** Native Rust-Anwendung (`AppOrchestrator`, `AudioRecorder`, `WhisperEngine`, `ModelDownloader`, `HotkeyManager`, `KWinPlatform`, `AutostartPlatform`, `PillTray`, `ClipboardManager`, `AppConfig`, `Logger`), Slint-UI, AppImage-Packaging & Desktop-Integration (KDE Plasma / XFCE)
 
 ---
 
 ## 1. Secrets & Zugangsdaten (Hardcoded Credentials)
 
-Der Quellcode der Rust-Anwendung sowie die Slint-UI-Definitionen wurden mit Regex- und Entropie-Mustern auf API-Keys (OpenAI, Anthropic, HuggingFace, GitHub), Passwörter, Token-Header und Zertifikate gescannt.
+Der gesamte Quellcode der Rust-Anwendung, die Slint-UI-Definitionen, Packaging-Skripte sowie die Konfigurations- und Testmodule wurden mittels Regex- und Entropie-Scans auf API-Schlüssel (OpenAI, Anthropic, HuggingFace, GitHub, AWS), Passwörter, Tokens und private Zertifikate geprüft.
 
-| Komponente | Gefundener Typ | Gefundener Bezeichner | Schweregrad | Status |
+| Komponente | Prüfumfang | Gefundene Secrets | Schweregrad | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| Quellcode & UI-Komponenten | Keine hardcodierten Keys/Tokens gefunden | - | Info | **PASSED** |
+| `AppOrchestrator` & `Slint UI` | Quellcode, Callbacks, Properties | 0 | Info | **PASSED** |
+| `WhisperEngine` & `ModelDownloader` | Inferenz-Pipeline & Modell-Cache | 0 | Info | **PASSED** |
+| `Platform` (KDE / XFCE / Autostart) | D-Bus, X11, XDG-Desktop-Entries | 0 | Info | **PASSED** |
+| `BuildScript` & `Packaging` | AppImage-Builder, `AppRun`, `.desktop` | 0 | Info | **PASSED** |
 
-> **Ergebnis:** 0 Secrets gefunden. Die Rust-App benötigt und verwendet keinerlei API-Tokens oder Anmeldedaten.
-
----
-
-## 2. Gefundene Schwachstellen & CVEs (Abhängigkeiten)
-
-Die in der Cargo-Abhängigkeitsauflösung gebundenen Crates wurden analysiert:
-
-| Paket / Version | Einsatzzweck | Lizenz | Schweregrad | Status | Empfehlung |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `slint` (1.18) | GUI-Framework | MIT / GPL-3.0 | Info | **OK** | Keine bekannten CVEs |
-| `cpal` (0.15) | Audio-Aufnahme | Apache-2.0 | Info | **OK** | Native PortAudio/ALSA/WASAPI-Anbindung |
-| `arboard` (3.4) | Zwischenablage | MIT / Apache-2.0 | Info | **OK** | Sichere Wayland/X11/Win32 Clipboard-APIs |
-| `crossbeam-channel` (0.5) | MPMC-Queue | MIT / Apache-2.0 | Info | **OK** | Thread-sichere FIFO-Kommunikation |
-| `serde` / `serde_json` (1.0) | Serialisierung | MIT / Apache-2.0 | Info | **OK** | Typsicheres JSON ohne dynamischen Eval |
-| `tokio` (1.40) | Async-Runtime | MIT | Info | **OK** | Nur Basisfunktionen, kein "net"-Feature aktiviert |
-| `whisper-rs` (0.16.0) | Lokale Whisper Inferenz | MIT | Info | **OK** | Bindings zu nativem whisper.cpp (offline) |
-| `zbus` (4.4) / `ksni` (0.3) | D-Bus Shortcuts & Tray | MIT | Info | **OK** | Lokale IPC via Unix Domain Sockets |
-
-> **Ergebnis:** Keine externen HTTP-/Netzwerk-Clients (`reqwest`, `hyper`, `ureq`) in den Abhängigkeiten vorhanden. Alle Lizenzen sind permissiv und kompatibel.
+> **Ergebnis:** 0 Secrets gefunden. Die Anwendung arbeitet vollständig lokal ohne Cloud-Accounts, Telemetrie-Endpunkte oder API-Schlüssel.
 
 ---
 
-## 3. Statische Code-Sicherheit (SAST & Memory Safety)
+## 2. Abhängigkeiten & Supply-Chain-Sicherheit (Cargo Crates)
 
-- **Memory Safety & Unsafe Rust:** **PASSED**
-  - Im Rust-Quellcode existieren **0 `unsafe` Codeblöcke**. Der gesamte Anwendungscode ist 100 % Safe Rust.
-- **Command- & Shell-Injections:** **PASSED**
-  - Alle Aufrufe von `std::process::Command` (z. B. im Hotkey-Manager für `gdbus`/`kwriteconfig6` und im System-Tray-Menü für `xdg-open`) übergeben Argumente ausschließlich als typisierte String-Slices (`.args([...])`).
-  - Es existiert keine Shell-Interpolation (`sh -c` oder `cmd.exe /c` werden nicht verwendet). Keine externen Benutzereingaben werden an Systembefehle weitergereicht.
-- **Sichere Dateihandhabung & Pfade:** **PASSED**
-  - Konfiguration wird unter standardisiertem XDG-Pfad (Benutzerkonfiguration) verwaltet.
-  - Autostart-Dateien werden im standardkonformen XDG-Autostart-Verzeichnis mit festen Formatstrings geschrieben.
-  - Keine unsicheren Pfadverkettungen oder Directory-Traversal-Risiken.
-- **Clipboard-Validierung:** **PASSED**
-  - Mutex-geschützter Clipboard-Manager. Transkribierter Text wird vor der Übergabe getrimmt; leere Eingaben werden sauber abgefangen.
+Die in `Cargo.toml` und `Cargo.lock` verankerten Abhängigkeiten der Rust-Anwendung wurden auf bekannte Sicherheitslücken (CVEs), unnötige Netzwerk-Stacks und Lizenzkompatibilität geprüft:
 
----
+| Crate / Version | Einsatzzweck | Lizenz | Netzwerk-Stack | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| `slint` (1.18) | Deklaratives GUI-Framework (FemtoVG / Software) | MIT / GPL-3.0 | Nein | **OK** |
+| `whisper-rs` (0.16.0) | Lokale C++ `whisper.cpp` CPU-Inferenz | MIT | Nein | **OK** |
+| `cpal` (0.15) | Low-Latency Audio-Aufnahme (ALSA / PipeWire / PulseAudio) | Apache-2.0 | Nein | **OK** |
+| `arboard` (3.4) | System-Zwischenablage (Wayland / X11 / Windows) | MIT / Apache-2.0 | Nein | **OK** |
+| `crossbeam-channel` (0.5) | Lock-freie MPMC-Thread-Kanäle | MIT / Apache-2.0 | Nein | **OK** |
+| `serde` / `serde_json` (1.0) | Typsichere JSON-Konfiguration | MIT / Apache-2.0 | Nein | **OK** |
+| `tokio` (1.40) | Async-Runtime (`rt-multi-thread`, `sync`, `time`, `macros`) | MIT | Nein (`net` deaktiviert) | **OK** |
+| `ksni` (0.3) | Freedesktop StatusNotifierItem System-Tray (D-Bus) | MIT | Nur lokaler Unix-Socket | **OK** |
+| `zbus` (4.4) | Lokale D-Bus-IPC (KDE `KGlobalAccel`) | MIT | Nur lokaler Unix-Socket | **OK** |
 
-## 4. Privacy, Download-Verbot & Offline-Verifikation
-
-- **Generelle Download-Prüfung:** **ACTION REQUIRED**
-  - **Befund 1 (CRITICAL):** In der Transkriptions-Engine (`WhisperEngine`) ruft die Methode `ensure_model_available()` über `std::process::Command::new("curl")` ein Modell von HuggingFace herunter, wenn die Datei nicht lokal existiert.
-  - **Befund 2 (MEDIUM):** In der Transkriptions-Engine (`WhisperEngine`) ist eine externe Download-URL (`https://huggingface.co/ggerganov/whisper.cpp/...`) hinterlegt.
-  - **Empfehlung zur Behebung:** Automatischen `curl`-Download entfernen. Stattdessen prüfen, ob die Modelldatei existiert, und falls nicht, mit einer informativen Fehlermeldung abbrechen (*"Whisper-Modell nicht gefunden: Bitte Modelldatei lokal im Cache- oder Anwendungsordner ablegen"*).
-- **Netzwerk-Aufrufe & Sockets:** **0 Remote-Sockets (100 % lokal)**
-  - Keine Remote-Sockets oder ausgehende Netzwerkverbindungen.
-  - Verwendete D-Bus-Sockets (`zbus`, `ksni`) operieren ausschließlich über lokale Unix Domain Sockets (`/run/user/.../bus`).
-- **Modell-Isolation:** **100 % lokal** (sobald Modelldatei auf der Festplatte vorliegt; Inferenz via `whisper-rs` benötigt keinerlei Internetzugriff).
-- **RAM- & Audio-Flushing (Datenschutz):** **PASSED (Vorbildlich)**
-  - Im Inferenz-Worker werden alle flüchtigen Audio-Samples nach Beendigung der Inferenz mit `0.0` überschrieben:
-    ```rust
-    for s in mut_samples.iter_mut() {
-        *s = 0.0;
-    }
-    mut_samples.clear();
-    ```
-  - Im Audio-Recorder bietet `AudioRecorder::flush_memory()` denselben Zero-Fill-Mechanismus.
-- **Log-Hygiene:** **PASSED**
-  - Zu keinem Zeitpunkt werden gesprochene oder transkribierte Inhalte in Logdateien oder auf der Standardausgabe persistent gespeichert.
-- **Lizenz-Konformität:** **PASSED** (MIT-Lizenz des Projekts, alle Crates permissiv).
+> **Ergebnis:** In der gesamten Cargo-Abhängigkeitsstruktur ist **kein einziger HTTP- oder TCP/IP-Client** (`reqwest`, `hyper`, `ureq`, `curl-sys`) eingebunden. Selbst in `tokio` ist das `net`-Feature explizit deaktiviert.
 
 ---
 
-## 5. Audit-Zusammenfassung & Handlungsempfehlung
+## 3. Statische Code-Analyse (SAST), Memory Safety & Prozess-Sicherheit
 
-| Bereich | Status | Details |
+### 3.1 Memory Safety & `unsafe`-Prüfung
+- **0 `unsafe`-Blöcke im Rust-Anwendungscode:** Der gesamte eigene Rust-Code (`app/src/`) kommt vollständig ohne `unsafe`-Blöcke aus.
+- **Compiler- & Linter-Verifikation:** `cargo clippy --all-targets -- -D warnings` läuft mit **0 Warnungen und 0 Fehlern** durch.
+- **Kein externes PNG-Crate für Screenshots nötig:** Der integrierte Screenshot-Generator (`--capture-screenshots`) nutzt einen kompakten, speichersicheren Pure-Rust-Encoder auf Basis der Standardbibliothek (`std::fs`, CRC32/Adler32).
+
+### 3.2 Schutz vor Command- & Shell-Injection (`std::process::Command`)
+Sämtliche externen Prozessaufrufe wurden einzeln auditiert:
+1. **`HotkeyManager` (KDE `KGlobalAccel`):** Ruft `gdbus` und `kwriteconfig6`/`kwriteconfig5` mit statischen, fest eincompilierten Argument-Arrays (`.args([...])`) auf. Keine Benutzereingaben fließen in den Aufruf ein.
+2. **`KWinPlatform` (KDE Window Rules & X11/XFCE `xprop`):** Liest und setzt Fensterattribute über `kreadconfig6`/`kwriteconfig6`, `qdbus6`/`qdbus` sowie `xprop` (für `_NET_WM_STATE_SKIP_TASKBAR` unter XFCE/X11) ausschließlich ohne Shell-Interpolation (`sh -c` wird nirgendwo verwendet).
+3. **`ModelDownloader` (Expliziter Modell-Download auf Nutzerwunsch):** Übergibt nur validierte, feste Modellnamen (`"base"` oder `"small"`) an `curl`/`wget` über `.args([...])` und schreibt zunächst atomar in eine `.tmp`-Datei, bevor diese nach erfolgreicher Prüfung umbenannt wird.
+4. **`PillTray` / `AppOrchestrator` (Log-Anzeige):** Öffnet die lokale Logdatei über `xdg-open` als separates Prozess-Argument ohne Shell-Auswertung.
+
+---
+
+## 4. Desktop- & Plattform-Sicherheit (KDE Plasma, XFCE & AppImage)
+
+### 4.1 D-Bus-Signal-Isolierung unter KDE Plasma (`HotkeyManager`)
+- **Strikte Objektpfad- und Komponenten-Filterung:** Der D-Bus-Listener abonniert über `zbus::MatchRule` ausschließlich Signale vom Objektpfad `/component/whisper_pill` auf dem Interface `org.kde.kglobalaccel.Component` (`globalShortcutPressed`).
+- **Payload-Verifikation (`is_whisper_pill_shortcut`):** Jedes eingehende Signal wird zusätzlich auf seine Tupel-Parameter `(component == "whisper_pill", action == "toggle_pill")` geprüft. Dadurch ist ausgeschlossen, dass fremde Desktop-Shortcuts (wie <kbd>F12</kbd> für Yakuake, die <kbd>Super</kbd>-Taste für das Anwendungsmenü oder Medien-Tasten) unbeabsichtigt eine Mikrofonaufnahme starten.
+
+### 4.2 Fenstermanager-Isolation unter KDE (KWin) und XFCE (Xfwm4 / X11)
+- **Kein Forced-Keep-Above-Hijacking:** In den KWin-Regeln (`KWinPlatform`) wird `aboverule=0` (`above=false`) gesetzt, damit die Kapsel keine sicherheits- oder systemkritischen Overlays (Dropdown-Terminals wie Yakuake, Bildschirmsperren oder Systemdialoge) verdeckt.
+- **Auto-Dismiss im Ready-Zustand:** Nach abgeschlossener Transkription blendet sich die Kapsel nach 8 Sekunden Inaktivität automatisch aus.
+- **XFCE / X11-Kompatibilität:** Über EWMH-Attribute (`_NET_WM_STATE_SKIP_TASKBAR`, `_NET_WM_STATE_SKIP_PAGER`) und das StatusNotifierItem-Protokoll fügt sich die Anwendung sauber in XFCE-Panels ein, ohne die Fensterliste zu überfrachten.
+
+### 4.3 AppImage- & Autostart-Sicherheit (`AutostartPlatform`, `BuildScript`)
+- **Persistente `$APPIMAGE`-Pfadauflösung:** Beim Betrieb als portables AppImage wird die Anwendung zur Laufzeit unter einem temporären FUSE-Mount (`/tmp/.mount_*`) eingehängt. `AutostartPlatform::get_persistent_executable_path()` wertet gezielt die Umgebungsvariable `$APPIMAGE` aus, sodass in der `.desktop`-Autostart-Datei niemals flüchtige `/tmp`-Pfade hinterlegt werden (Schutz vor kaputten Autostart-Einträgen und `/tmp`-Hijacking nach Neustarts).
+- **Selbstheilende Pfadvalidierung:** Beim Start prüft die App, ob der in `whisper-pill.desktop` eingetragene `Exec=`-Pfad noch auf eine real existierende Datei verweist, und korrigiert veraltete Pfade automatisch.
+- **Restriktive Dateiberechtigungen (`0o755`):** Ausführbare Rechte werden ausschließlich für die eigene `.desktop`-Datei im Benutzer-Autostart-Ordner und die Ziel-AppImage-Datei gesetzt.
+- **Public-Repo-Hygiene im Build-Skript (`scripts/build_appimage.sh`):** Keine lokalen Entwicklerpfade im Build-Skript; Suche nach `appimagetool` erfolgt ausschließlich über `$APPIMAGETOOL`, `$PATH` und Standard-Benutzerpfade.
+
+---
+
+## 5. Datenschutz, Zero-Download-Prinzip & RAM-Hygiene
+
+- **Automatisierter Offline-Check (`check_downloads.py`):** **PASSED**
+  - `WhisperEngine::ensure_model_available()` führt **keinerlei automatische Netzwerk-Downloads** durch, sondern prüft rein lokal das Vorhandensein der Modelldatei.
+  - Ein Download von HuggingFace erfolgt ausschließlich dann, wenn der Benutzer im Einstellungs-Dialog aktiv auf den Modell-Download klickt oder das Skript `scripts/download_model.sh` manuell aufruft.
+- **RAM-Zeroing von Sprachdaten (Audio-Flushing):** **PASSED (Vorbildlich)**
+  - Unmittelbar nach Abschluss jeder Whisper-Transkription werden sämtliche Audiosamples im Arbeitsspeicher explizit mit `0.0` überschrieben (`*s = 0.0; mut_samples.clear();`), bevor der Puffer freigegeben wird.
+  - Ebenso überschreibt `AudioRecorder::flush_memory()` den Aufnahmepuffer vor dem Leeren vollständig mit Nullen.
+- **Strikte Log-Hygiene (`Logger`):** **PASSED**
+  - In die Diagnose-Datei (`error.log`) werden ausschließlich technische System- und Fehlermeldungen (Zeitstempel, Modulname, Fehlerursache) geschrieben. Transkribierte Texte oder Audioinhalte werden niemals protokolliert.
+
+---
+
+## 6. Zusammenfassung der Prüfergebnisse
+
+| Prüfkategorie | Status | Ergebnisdetails |
 | :--- | :--- | :--- |
-| **Secrets & Keys** | ✔ PASSED | 0 Hardcoded Credentials |
-| **Abhängigkeiten (Cargo)** | ✔ PASSED | 0 Netzwerk-Crates, permissive Lizenzen |
-| **Memory Safety (SAST)** | ✔ PASSED | 0 `unsafe` Blöcke, 100 % Safe Rust |
-| **Command Injection** | ✔ PASSED | Keine dynamischen Shell-Befehle |
-| **Audio-Datenschutz** | ✔ PASSED | RAM-Zeroing direkt nach Transkription |
-| **Zero-Download-Richtlinie** | ⚠️ **ACTION REQUIRED** | `curl`-Modell-Download in Transkriptions-Engine entfernen |
+| **Secrets & Credentials** | ✔ PASSED | 0 hardcodierte Schlüssel, Tokens oder Passwörter |
+| **Cargo-Abhängigkeiten** | ✔ PASSED | 0 HTTP-/Netzwerk-Crates, alle Lizenzen MIT/Apache-2.0-kompatibel |
+| **Memory Safety (SAST)** | ✔ PASSED | 0 `unsafe`-Blöcke im Anwendungscode, 0 Clippy-Warnungen |
+| **Command Injection** | ✔ PASSED | Typsichere Argument-Arrays, keine Shell-Interpolation (`sh -c`) |
+| **D-Bus & Hotkey-Isolation** | ✔ PASSED | Strikter Pfad- (`/component/whisper_pill`) & Payload-Filter |
+| **AppImage & Autostart** | ✔ PASSED | Persistente `$APPIMAGE`-Auflösung, kein `/tmp`-Mount-Leaking |
+| **Zero-Download & Offline-Check** | ✔ PASSED | `check_downloads.py` meldet 0 unerlaubte Downloads im Betrieb |
+| **Audio-RAM- & Log-Datenschutz** | ✔ PASSED | Explizites Zero-Fill der Audio-Samples nach jeder Transkription |

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Whisper Pill – Benutzerhandbuch</title>
+  <title>Whisper Pill – Benutzerhandbuch (Rust-App & AppImage)</title>
   <style>
     :root {
       --bg-main: #09090b;
@@ -29,12 +29,12 @@
       background-color: var(--bg-main);
       color: var(--text-main);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, Cantarell, sans-serif;
-      line-height: 1.6;
+      line-height: 1.65;
       padding: 40px 20px;
     }
 
     .container {
-      max-width: 880px;
+      max-width: 920px;
       margin: 0 auto;
     }
 
@@ -74,10 +74,10 @@
     }
 
     h2 {
-      font-size: 1.4rem;
+      font-size: 1.45rem;
       font-weight: 700;
       color: var(--text-main);
-      margin: 36px 0 16px 0;
+      margin: 40px 0 16px 0;
       display: flex;
       align-items: center;
       gap: 10px;
@@ -87,9 +87,16 @@
       content: "";
       display: inline-block;
       width: 4px;
-      height: 20px;
+      height: 22px;
       background: var(--accent-cyan);
       border-radius: 2px;
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin: 16px 0 8px 0;
     }
 
     p, ul, ol {
@@ -119,32 +126,33 @@
 
     .card-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 20px;
       margin-bottom: 24px;
     }
 
-    .state-card {
-      background: var(--bg-card);
+    .screenshot-box {
+      background: #121215;
       border: 1px solid var(--border-color);
-      border-radius: 10px;
-      padding: 16px;
+      border-radius: 12px;
+      padding: 18px;
+      margin: 12px 0 20px 0;
+      text-align: center;
     }
 
-    .state-header {
-      font-weight: 700;
-      color: var(--text-main);
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .screenshot-box img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 8px;
     }
 
     .badge {
       font-size: 0.75rem;
-      padding: 2px 8px;
+      padding: 2px 10px;
       border-radius: 12px;
       font-weight: 600;
+      display: inline-block;
+      margin-left: 8px;
     }
 
     .badge-rec { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
@@ -200,12 +208,26 @@
       color: var(--accent-cyan);
     }
 
+    pre {
+      background: #121215;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 14px 18px;
+      overflow-x: auto;
+      margin-bottom: 16px;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+    }
+
     .callout {
       border-left: 4px solid var(--accent-cyan);
       background: rgba(56, 189, 248, 0.08);
       padding: 16px 20px;
       border-radius: 0 8px 8px 0;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     .callout-title {
@@ -227,65 +249,89 @@
 <body>
   <div class="container">
     <header>
-      <div class="pill-logo">Whisper <span>Pill</span></div>
-      <h1>Benutzerhandbuch</h1>
-      <p class="subtitle">Schlankes, minimalistisches Desktop-Diktier-Utility (100 % lokal & datenschutzfokussiert)</p>
+      <div class="pill-logo">🎙 Whisper <span>Pill</span></div>
+      <h1>Benutzerhandbuch (Rust-App &amp; AppImage)</h1>
+      <p class="subtitle">Schlankes, minimalistisches Desktop-Diktier-Utility für KDE Plasma, XFCE &amp; GNOME – 100 % lokal &amp; datenschutzfokussiert</p>
     </header>
 
-    <h2>1. Schnellstart</h2>
+    <h2>1. Schnellstart mit dem Linux-AppImage</h2>
     <div class="card">
-      <p>Whisper Pill kann direkt als autarkes, vorkompiliertes <strong>Linux-AppImage</strong> ohne Installation gestartet werden:</p>
+      <p>Whisper Pill ist als autarkes, nur <strong>ca. 13 MB</strong> großes <strong>Linux-AppImage</strong> gebündelt und benötigt keine Installation oder Root-Rechte. Lege die Datei idealerweise an einem festen Ort in deinem Benutzerverzeichnis ab (z. B. <code>~/Applications/</code>), damit auch der optionale System-Autostart dauerhaft darauf zugreifen kann:</p>
+      <pre><code># 1. Ausführrechte vergeben (einmalig)
+chmod +x dist/Whisper_Pill-x86_64.AppImage
+
+# 2. Anwendung starten (nistet sich im System-Tray ein)
+./dist/Whisper_Pill-x86_64.AppImage
+
+# Optionale CLI-Parameter:
+./dist/Whisper_Pill-x86_64.AppImage --version
+./dist/Whisper_Pill-x86_64.AppImage --help</code></pre>
       <div class="callout">
-        <div class="callout-title">AppImage Ausführen</div>
-        <code>./dist/Whisper_Pill-x86_64.AppImage</code>
+        <div class="callout-title">Tray-First-Workflow</div>
+        Beim Start läuft Whisper Pill ressourcenschonend im Hintergrund in deinem System-Tray (Taskleiste) und wartet auf deinen Hotkey (<kbd>Super</kbd> + <kbd>Strg</kbd> + <kbd>P</kbd>) oder einen Klick auf das Tray-Icon.
       </div>
-      <p>Beim Start platziert sich Whisper Pill unaufdringlich im System-Tray (Benachrichtigungsbereich deiner Taskleiste) und wartet im Hintergrund auf deinen Tastendruck.</p>
     </div>
 
-    <h2>2. Die Benutzeroberfläche & Zustände</h2>
-    <p>Die schwebende Kapsel („Pill“) passt sich dynamisch deinen Eingaben an:</p>
-    
+    <h2>2. Besonderheiten unter KDE Plasma &amp; XFCE</h2>
     <div class="card-grid">
-      <div class="state-card">
-        <div class="state-header">
-          <span>Aufnahme</span>
-          <span class="badge badge-rec">● REC</span>
-        </div>
-        <p>Aktiviert per globalem Hotkey. Zeigt Live-Lautstärkepegel und Aufnahmezeit. Sprich deinen Text einfach frei heraus.</p>
+      <div class="card">
+        <h3>KDE Plasma 5 &amp; 6 (Wayland &amp; X11)</h3>
+        <ul>
+          <li><strong>Automatischer Global-Shortcut:</strong> Registriert <kbd>Super</kbd> + <kbd>Strg</kbd> + <kbd>P</kbd> direkt beim KDE-Dienst <code>KGlobalAccel</code>.</li>
+          <li><strong>Strikte Signal-Isolierung:</strong> Lauscht exklusiv auf den D-Bus-Pfad <code>/component/whisper_pill</code> – andere Shortcuts wie <kbd>F12</kbd> (Yakuake) oder die <kbd>Super</kbd>-Taste (Kickoff/KRunner) bleiben vollkommen unberührt.</li>
+          <li><strong>Automatische KWin-Regeln:</strong> Verhindert Einträge in der Kontrollleiste und in <kbd>Alt</kbd>+<kbd>Tab</kbd> und harmoniert mit Dropdown-Terminals wie Yakuake.</li>
+        </ul>
       </div>
-
-      <div class="state-card">
-        <div class="state-header">
-          <span>Transkription</span>
-          <span class="badge badge-trans">⏳ Transkribiert</span>
-        </div>
-        <p>Die Whisper-KI verarbeitet die Sprache auf deiner CPU. Das Tray-Icon signalisiert dies mit bernsteinfarbenen Wellen.</p>
-      </div>
-
-      <div class="state-card">
-        <div class="state-header">
-          <span>Bereit & Kopiert</span>
-          <span class="badge badge-ready">✔ Bereit</span>
-        </div>
-        <p>Der fertige Text liegt direkt in deiner Zwischenablage. Drücke <kbd>Strg</kbd>+<kbd>V</kbd> zum Einfügen.</p>
-      </div>
-
-      <div class="state-card">
-        <div class="state-header">
-          <span>Editor & Review</span>
-          <span class="badge badge-idle">⤢ Details</span>
-        </div>
-        <p>Klick auf Details klappt das Textfeld auf. Hier kannst du Texte prüfen, manuell bearbeiten oder archivieren.</p>
+      <div class="card">
+        <h3>XFCE Desktop (X11)</h3>
+        <ul>
+          <li><strong>System-Tray-Einbindung:</strong> Nutzt das Freedesktop <code>StatusNotifierItem</code>-Protokoll in der XFCE-Benachrichtigungsfläche (<code>xfce4-statusnotifier-plugin</code>).</li>
+          <li><strong>Xfwm4-Fensterattribute:</strong> Setzt automatisch <code>_NET_WM_STATE_SKIP_TASKBAR</code> und <code>_NET_WM_STATE_SKIP_PAGER</code> via <code>xprop</code>, sodass die Kapsel rahmenlos schwebt.</li>
+          <li><strong>Tastenkürzel &amp; Audio:</strong> Aufnahme jederzeit per Klick auf das Tray-Icon oder über einen eigenen Kurzbefehl in <code>xfce4-keyboard-settings</code> startbar; Mikrofonauswahl bequem via <code>pavucontrol</code>.</li>
+        </ul>
       </div>
     </div>
 
-    <h2>3. Tastenkürzel & Bedienung</h2>
+    <h2>3. Die Oberflächen-Zustände der Rust-App</h2>
+    <div class="card">
+      <h3>3.1 Ruhezustand (Idle) <span class="badge badge-idle">520 × 48 px</span></h3>
+      <p>Kompakte Bereitschaftsansicht am Bildschirmrand (0 % CPU-Last im Standby) mit direktem Start-Button:</p>
+      <div class="screenshot-box">
+        <img src="assets/state_0_idle.png" alt="Ruhezustand (Idle)">
+      </div>
+
+      <h3>3.2 Aktive Sprachaufnahme (Recording) <span class="badge badge-rec">Live-Waveform &amp; VAD</span></h3>
+      <p>Während des Sprechens zeigen <strong>11 zentrierte Wellenform-Balken</strong> den Mikrofonpegel in Echtzeit an. Eine automatische Stille-Erkennung (VAD) beendet die Aufnahme nach einer Sprechpause selbstständig oder du klickst auf <code>[■ Stop]</code>:</p>
+      <div class="screenshot-box">
+        <img src="assets/state_1_recording.png" alt="Aktive Aufnahme (Recording)">
+      </div>
+
+      <h3>3.3 Fertig &amp; Kopiert (Ready) <span class="badge badge-ready">Auto-Dismiss nach 8s</span></h3>
+      <p>Das Transkript liegt sofort in deiner Zwischenablage zum Einfügen mit <kbd>Strg</kbd> + <kbd>V</kbd> bereit. Mit <code>[+ Weiter]</code> hängst du weitere Sätze nahtlos an, mit <code>[● Neu]</code> startest du von vorn und mit <code>[↗ Details]</code> öffnest du den Editor. Ohne Interaktion blendet sich die Kapsel nach 8 Sekunden von selbst wieder aus:</p>
+      <div class="screenshot-box">
+        <img src="assets/state_2_ready.png" alt="Fertig in Zwischenablage kopiert (Ready)">
+      </div>
+
+      <h3>3.4 Ausgeklappter Text-Editor (Expanded) <span class="badge badge-idle">520 × 240 px</span></h3>
+      <p>Mehrzeiliger, per Mausrad und Scrollbalken frei scrollbarer Editor zur Prüfung und Nachbearbeitung längerer Diktate. Über die Kopfzeile erreichst du <code>[▲ Zuklappen]</code>, <code>[– Verbergen]</code>, <code>[✕ Beenden]</code> und <code>[⎘ Text kopieren]</code>:</p>
+      <div class="screenshot-box">
+        <img src="assets/state_3_expanded.png" alt="Ausgeklappter Text-Editor (Expanded)">
+      </div>
+
+      <h3>3.5 Integrierter Einstellungs-Dialog (Settings) <span class="badge badge-trans">580 × 480 px</span></h3>
+      <p>Erreichbar per Rechtsklick auf das Tray-Icon &rarr; <strong>Einstellungen...</strong>. Ermöglicht die Konfiguration von System-Autostart (inkl. selbstheilender AppImage-Pfadauflösung), KI-Sprachmodell (<code>base</code> vs. <code>small</code> inkl. Direkt-Download), automatischer Mikrofon-Verstärkung (<code>Gain</code>) und Suchstrategie (<code>Schnell / Greedy</code> vs. <code>Gründlich / Beam Search</code>):</p>
+      <div class="screenshot-box">
+        <img src="assets/state_4_settings.png" alt="Integrierter Einstellungs-Dialog (Settings)">
+      </div>
+    </div>
+
+    <h2>4. Tastenkombinationen &amp; Maussteuerung</h2>
     <div class="card">
       <table>
         <thead>
           <tr>
             <th>Aktion</th>
-            <th>Tastenkombination / Geste</th>
+            <th>Tastenkürzel / Geste</th>
             <th>Beschreibung</th>
           </tr>
         </thead>
@@ -293,55 +339,49 @@
           <tr>
             <td><strong>Aufnahme starten / stoppen</strong></td>
             <td><kbd>Super</kbd> + <kbd>Strg</kbd> + <kbd>P</kbd></td>
-            <td>Aktiviert oder beendet die Sprachaufnahme von überall aus.</td>
+            <td>Startet oder beendet die Sprachaufnahme global aus jeder Anwendung heraus.</td>
           </tr>
           <tr>
             <td><strong>Text einfügen</strong></td>
             <td><kbd>Strg</kbd> + <kbd>V</kbd></td>
-            <td>Fügt das fertige Diktat in jedes beliebige Programm ein.</td>
+            <td>Fügt das automatisch kopierte Transkript im aktiven Zielfenster ein.</td>
           </tr>
           <tr>
-            <td><strong>Pill verschieben</strong></td>
-            <td>Linke Maustaste gedrückt halten</td>
-            <td>Freies Drag & Drop; die Position wird automatisch gespeichert.</td>
+            <td><strong>Kapsel verschieben</strong></td>
+            <td>Linke Maustaste ziehen</td>
+            <td>Positioniert die Pill frei per Drag &amp; Drop; Koordinaten werden dauerhaft gespeichert.</td>
           </tr>
           <tr>
-            <td><strong>Kontextmenü</strong></td>
+            <td><strong>Tray-Kontextmenü</strong></td>
             <td>Rechtsklick auf Tray-Icon</td>
-            <td>Schnellzugriff auf Aufnahme, Einstellungen und Fehlerlog.</td>
+            <td>Schnellzugriff auf Aufnahme, Autostart, Einstellungen, Fehlerlog und Beenden.</td>
           </tr>
           <tr>
-            <td><strong>Pill ausblenden</strong></td>
-            <td>Klick auf <kbd>✕</kbd> oder <kbd>Esc</kbd></td>
-            <td>Minimiert die Kapsel zurück in den System-Tray.</td>
+            <td><strong>Kapsel verbergen</strong></td>
+            <td><code>[– Verbergen]</code> / <code>[✕]</code> / 8s</td>
+            <td>Minimiert das Fenster in den System-Tray.</td>
+          </tr>
+          <tr>
+            <td><strong>Anwendung beenden</strong></td>
+            <td><code>[✕ Beenden]</code> / Tray-Menü</td>
+            <td>Beendet Whisper Pill vollständig.</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <h2>4. Einstellungen anpassen</h2>
+    <h2>5. Diagnose, Pfade &amp; Fehlerbehebung</h2>
     <div class="card">
-      <p>Über das Tray-Kontextmenü (Rechtsklick auf das Mikrofonsymbol &rarr; <em>Einstellungen...</em>) öffnest du das Konfigurationsmenü:</p>
       <ul>
-        <li><strong>Whisper-Modell wählen:</strong> Wähle zwischen dem schnellen <code>base</code>-Modell (geringster RAM-Bedarf) und dem hochpräzisen <code>small</code>-Modell für anspruchsvolle Fachbegriffe.</li>
-        <li><strong>Suchstrategie (Beam Search):</strong> Aktiviere <em>Beam Search (5 Beams)</em> für maximale Genauigkeit bei komplexen Sätzen oder nutze <em>Greedy Search</em> für minimale Latenz.</li>
-        <li><strong>Automatische Lautstärkeanpassung (Gain):</strong> Normalisiert leise Mikrofonsignale automatisch für verlässliche Transkriptionen.</li>
-        <li><strong>Mit dem System starten (Autostart):</strong> Startet Whisper Pill beim Hochfahren deines Computers automatisch im Hintergrund.</li>
-      </ul>
-    </div>
-
-    <h2>5. Fehleranalyse & Diagnose</h2>
-    <div class="card">
-      <p>Sollte ein Mikrofon nicht erkannt werden oder ein KI-Modell fehlen, protokolliert Whisper Pill alle Details strukturiert:</p>
-      <ul>
-        <li>Klicke mit der rechten Maustaste auf das System-Tray-Icon.</li>
-        <li>Wähle <strong>Fehlerlog anzeigen...</strong>.</li>
-        <li>Das Log öffnet sich sofort in deinem bevorzugten Standard-Texteditor.</li>
+        <li><strong>Konfigurationsdatei:</strong> <code>~/.config/whisper_pill/config.json</code></li>
+        <li><strong>Lokaler Modell-Cache:</strong> <code>~/.cache/whisper_pill/ggml-base.bin</code> bzw. <code>ggml-small.bin</code></li>
+        <li><strong>Diagnose- &amp; Fehlerlog:</strong> <code>~/.local/share/whisper_pill/whisper_pill_error.log</code> (direkt über Rechtsklick auf Tray-Icon &rarr; <em>Fehlerlog öffnen</em> einsehbar)</li>
+        <li><strong>Autostart-Desktop-Datei:</strong> <code>~/.config/autostart/whisper-pill.desktop</code></li>
       </ul>
     </div>
 
     <footer>
-      <p>&copy; 2026 Whisper Pill – Veröffentlicht unter der MIT-Lizenz. 100 % lokale Open-Source Desktop-Software.</p>
+      Whisper Pill &bull; 100 % Lokale Open-Source-Spracherkennung in Rust &amp; Slint &bull; Veröffentlicht unter der MIT-Lizenz
     </footer>
   </div>
 </body>

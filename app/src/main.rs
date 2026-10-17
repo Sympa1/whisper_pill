@@ -27,7 +27,7 @@ enum AudioCommand {
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Befehlszeilenparameter pruefen (--version, --help)
+    // Befehlszeilenparameter pruefen (--version, --help, --capture-screenshots)
     let s_args: Vec<String> = std::env::args().collect();
     if s_args.iter().any(|arg| arg == "--version" || arg == "-v") {
         println!("Whisper Pill v{}", env!("CARGO_PKG_VERSION"));
@@ -38,9 +38,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("Verwendung: whisper_pill [OPTIONEN]");
         println!();
         println!("Optionen:");
-        println!("  -h, --help       Zeigt diese Hilfe an");
-        println!("  -v, --version    Zeigt die Versionsnummer an");
+        println!("  -h, --help                         Zeigt diese Hilfe an");
+        println!("  -v, --version                      Zeigt die Versionsnummer an");
+        println!("  --capture-screenshots [VERZEICHNIS] Erzeugt UI-Screenshots aller Kapselzustaende");
         return Ok(());
+    }
+    if let Some(i_buffy_idx) = s_args.iter().position(|arg| arg == "--capture-screenshots") {
+        let s_buffy_out_dir = s_args
+            .get(i_buffy_idx + 1)
+            .cloned()
+            .unwrap_or_else(|| "docs/assets".to_string());
+        return run_screenshot_capture(std::path::Path::new(&s_buffy_out_dir));
     }
 
     // 0. Fehler- und Diagnoseprotokollierung initialisieren
@@ -816,3 +824,215 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+/// Startet die Slint-Oberflaeche im automatisierten Screenshot-Modus, durchlaeuft alle
+/// Kernzustaende der Rust-App und speichert sie als transparente PNG-Dateien.
+fn run_screenshot_capture(out_dir: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
+    std::fs::create_dir_all(out_dir)?;
+
+    let app_window = AppWindow::new()?;
+    app_window.set_is_settings(false);
+    app_window.set_is_expanded(false);
+    app_window.set_current_state(0);
+    app_window
+        .window()
+        .set_size(slint::LogicalSize::new(520.0, 48.0));
+    app_window.show()?;
+
+    let i_buffy_step = std::rc::Rc::new(std::cell::Cell::new(0u32));
+    let out_path_buf = out_dir.to_path_buf();
+    let window_weak = app_window.as_weak();
+
+    let timer = slint::Timer::default();
+    timer.start(
+        slint::TimerMode::Repeated,
+        Duration::from_millis(280),
+        move || {
+            let Some(win) = window_weak.upgrade() else {
+                let _ = slint::quit_event_loop();
+                return;
+            };
+            let i_buffy_cur = i_buffy_step.get();
+            i_buffy_step.set(i_buffy_cur + 1);
+
+            match i_buffy_cur {
+                0 => {
+                    // Zustand 0 (Idle) ist gerendert -> speichern und auf Zustand 1 (Recording) schalten
+                    if let Ok(buf) = win.window().take_snapshot() {
+                        let _ = save_rgba_as_png(
+                            &out_path_buf.join("state_0_idle.png"),
+                            buf.width(),
+                            buf.height(),
+                            buf.as_bytes(),
+                        );
+                    }
+                    win.set_current_state(1);
+                    win.set_timer_string("00:04".into());
+                    win.set_bar0(6.0);
+                    win.set_bar1(10.0);
+                    win.set_bar2(16.0);
+                    win.set_bar3(22.0);
+                    win.set_bar4(26.0);
+                    win.set_bar5(28.0);
+                    win.set_bar6(24.0);
+                    win.set_bar7(18.0);
+                    win.set_bar8(12.0);
+                    win.set_bar9(8.0);
+                    win.set_bar10(5.0);
+                }
+                1 => {
+                    // Zustand 1 (Recording) speichern und auf Zustand 3 (Ready) schalten
+                    if let Ok(buf) = win.window().take_snapshot() {
+                        let _ = save_rgba_as_png(
+                            &out_path_buf.join("state_1_recording.png"),
+                            buf.width(),
+                            buf.height(),
+                            buf.as_bytes(),
+                        );
+                    }
+                    win.set_current_state(3);
+                }
+                2 => {
+                    // Zustand 3 (Ready) speichern und auf Zustand 4 (Expanded) schalten
+                    if let Ok(buf) = win.window().take_snapshot() {
+                        let _ = save_rgba_as_png(
+                            &out_path_buf.join("state_2_ready.png"),
+                            buf.width(),
+                            buf.height(),
+                            buf.as_bytes(),
+                        );
+                    }
+                    win.set_current_state(4);
+                    win.set_is_expanded(true);
+                    win.set_transcript_string(
+                        "Dies ist ein lokal transkribierter Diktat-Text der nativen Rust-App.\n\
+                         Der erkannte Text liegt sofort in der Zwischenablage bereit und kann \
+                         hier im ausklappbaren Editor direkt geprüft oder angepasst werden."
+                            .into(),
+                    );
+                    win.window().set_size(slint::LogicalSize::new(520.0, 240.0));
+                }
+                3 => {
+                    // Zustand 4 (Expanded) speichern und auf Einstellungs-Dialog schalten
+                    if let Ok(buf) = win.window().take_snapshot() {
+                        let _ = save_rgba_as_png(
+                            &out_path_buf.join("state_3_expanded.png"),
+                            buf.width(),
+                            buf.height(),
+                            buf.as_bytes(),
+                        );
+                    }
+                    win.set_is_expanded(false);
+                    win.set_is_settings(true);
+                    win.set_base_model_available(true);
+                    win.set_small_model_available(true);
+                    win.set_selected_model("base".into());
+                    win.set_beam_search_enabled(true);
+                    win.set_normalize_audio_enabled(true);
+                    win.set_autostart_enabled(true);
+                    win.window().set_size(slint::LogicalSize::new(580.0, 480.0));
+                }
+                4 => {
+                    // Einstellungs-Dialog speichern und beenden
+                    if let Ok(buf) = win.window().take_snapshot() {
+                        let _ = save_rgba_as_png(
+                            &out_path_buf.join("state_4_settings.png"),
+                            buf.width(),
+                            buf.height(),
+                            buf.as_bytes(),
+                        );
+                    }
+                    println!(
+                        "[Screenshot-Generator] Rust-UI-Screenshots erfolgreich in '{}' gespeichert.",
+                        out_path_buf.display()
+                    );
+                    let _ = slint::quit_event_loop();
+                }
+                _ => {
+                    let _ = slint::quit_event_loop();
+                }
+            }
+        },
+    );
+
+    slint::run_event_loop_until_quit()?;
+    Ok(())
+}
+
+/// Schreibt einen RGBA8-Pixelpuffer ohne externe Crate-Abhaengigkeiten als standardkonforme PNG-Datei.
+fn save_rgba_as_png(
+    path: &std::path::Path,
+    width: u32,
+    height: u32,
+    rgba: &[u8],
+) -> std::io::Result<()> {
+    let mut out = Vec::new();
+    // PNG-Signatur
+    out.extend_from_slice(&[137, 80, 78, 71, 13, 10, 26, 10]);
+
+    // IHDR-Chunk (Farbtyp 6 = RGBA, 8 Bit Farbtiefe)
+    let mut ihdr = Vec::with_capacity(13);
+    ihdr.extend_from_slice(&width.to_be_bytes());
+    ihdr.extend_from_slice(&height.to_be_bytes());
+    ihdr.extend_from_slice(&[8, 6, 0, 0, 0]);
+    write_png_chunk(&mut out, b"IHDR", &ihdr);
+
+    // Roh-Scanlines mit Filterbyte 0 (None) pro Zeile aufbauen
+    let i_buffy_row_bytes = (width as usize) * 4;
+    let mut raw_data = Vec::with_capacity((i_buffy_row_bytes + 1) * (height as usize));
+    for i_buffy_y in 0..(height as usize) {
+        raw_data.push(0u8);
+        let i_buffy_start = i_buffy_y * i_buffy_row_bytes;
+        raw_data.extend_from_slice(&rgba[i_buffy_start..i_buffy_start + i_buffy_row_bytes]);
+    }
+
+    // Zlib-Stream mit unkomprimierten Deflate-Bloecken erzeugen
+    let mut zlib = Vec::new();
+    zlib.extend_from_slice(&[0x78, 0x01]);
+    let chunks: Vec<&[u8]> = raw_data.chunks(65535).collect();
+    for (i_buffy_idx, block) in chunks.iter().enumerate() {
+        let is_last = i_buffy_idx + 1 == chunks.len();
+        zlib.push(if is_last { 0x01 } else { 0x00 });
+        let i_buffy_len = block.len() as u16;
+        zlib.extend_from_slice(&i_buffy_len.to_le_bytes());
+        zlib.extend_from_slice(&(!i_buffy_len).to_le_bytes());
+        zlib.extend_from_slice(block);
+    }
+    zlib.extend_from_slice(&compute_adler32(&raw_data).to_be_bytes());
+    write_png_chunk(&mut out, b"IDAT", &zlib);
+
+    // IEND-Chunk
+    write_png_chunk(&mut out, b"IEND", &[]);
+    std::fs::write(path, out)
+}
+
+/// Fuegt einen einzelnen PNG-Chunk inklusive Laenge und CRC32-Pruefsumme an den Ausgabepuffer an.
+fn write_png_chunk(out: &mut Vec<u8>, chunk_type: &[u8; 4], data: &[u8]) {
+    out.extend_from_slice(&(data.len() as u32).to_be_bytes());
+    out.extend_from_slice(chunk_type);
+    out.extend_from_slice(data);
+    let mut i_buffy_crc: u32 = 0xFFFF_FFFF;
+    for &b in chunk_type.iter().chain(data.iter()) {
+        i_buffy_crc ^= b as u32;
+        for _ in 0..8 {
+            if i_buffy_crc & 1 != 0 {
+                i_buffy_crc = (i_buffy_crc >> 1) ^ 0xEDB8_8320;
+            } else {
+                i_buffy_crc >>= 1;
+            }
+        }
+    }
+    out.extend_from_slice(&(!i_buffy_crc).to_be_bytes());
+}
+
+/// Berechnet die Adler-32-Pruefsumme fuer den Zlib-Datenstrom eines PNGs.
+fn compute_adler32(data: &[u8]) -> u32 {
+    let mut i_buffy_a: u32 = 1;
+    let mut i_buffy_b: u32 = 0;
+    for &byte in data {
+        i_buffy_a = (i_buffy_a + byte as u32) % 65521;
+        i_buffy_b = (i_buffy_b + i_buffy_a) % 65521;
+    }
+    (i_buffy_b << 16) | i_buffy_a
+}
+

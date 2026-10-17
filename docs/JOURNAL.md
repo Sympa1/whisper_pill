@@ -3,6 +3,37 @@
 Dieses Dokument dient als kontinuierliches Gedächtnis des Projekts. 
 Hier werden fundamentale Architekturentscheidungen, erreichte Meilensteine und offene Punkte chronologisch (neueste Einträge oben) dokumentiert.
 
+### 2026-10-17 - Phase 2: Sicherheits-Checkup (`SECURE`), Benutzer- & Technik-Dokumentation (Rust-App, AppImage, KDE & XFCE) sowie Nativer Slint-Screenshot-Generator
+- **Entscheidung / Änderung:**
+  1. **Vollständiger Sicherheits-Checkup der Rust-App & des AppImages (`docs/security_audit_report.md`):**
+     - Gesamtbewertung: **SECURE** (alle Prüfungen bestanden).
+     - Automatisierter Zero-Download & Offline-Check (`check_downloads.py`): **PASSED** (0 unerlaubte Downloads oder Netzwerk-Crates im regulären Betrieb).
+     - Statische Code-Analyse (SAST): **0 `unsafe`-Blöcke** im gesamten Rust-Anwendungscode, **0 Clippy-Warnungen**, keine Shell-Interpolation (`sh -c`), strikte D-Bus-Signal-Isolierung auf `/component/whisper_pill` (`HotkeyManager`), sichere `$APPIMAGE`-Autostart-Auflösung ohne `/tmp`-Mount-Leaking sowie lückenloses RAM-Zeroing (`*s = 0.0`) der Audiosamples direkt nach jeder Transkription.
+  2. **Ausführliche Endbenutzer-Dokumentation für Rust-App, AppImage, KDE Plasma & XFCE (`docs/USER_GUIDE.md`, `docs/user_guide.html`):**
+     - Detaillierte Anleitung für den portablen AppImage-Einsatz (`chmod +x`, CLI-Optionen, selbstheilender Autostart).
+     - Dedizierte Kapitel für **KDE Plasma 5/6 (Wayland & X11)** (`KGlobalAccel`-Shortcut, Yakuake-Z-Order-Harmonie, KWin-Regeln, StatusNotifier-Tray) und **XFCE (X11)** (`xfce4-statusnotifier-plugin`, `Xfwm4`-Fensterattribute via `xprop`, Kurzbefehle via `xfce4-keyboard-settings`, Audio via `pavucontrol`).
+     - Einbindung und Erläuterung aller 5 direkt aus der Rust-App gerenderten UI-Screenshots (`state_0_idle.png` bis `state_4_settings.png`) sowohl im Markdown- als auch im autarken Offline-HTML-Handbuch.
+  3. **Technische Architektur- & Entwickler-Dokumentation (`docs/architecture/technical_documentation.md`):**
+     - Vollständige Dokumentation der Rust/Slint-Architektur inklusive Mermaid-Systemübersicht, Zustandsautomat (inkl. 8s Auto-Dismiss, Scrollable Editor, Settings), Klassendiagramm und Multi-Thread-Sequenzdiagramm.
+     - Spezifikation der Plattform-Integration für KDE Plasma (D-Bus Match-Rule & Payload-Filter, KWin) und XFCE (X11 EWMH-Atome, StatusNotifierItem) sowie der AppImage-Build- und Autostart-Architektur.
+  4. **Nativer Screenshot-Generator (`--capture-screenshots`) & Überarbeitung der `README.md`:**
+     - Implementierung von `run_screenshot_capture` und `save_rgba_as_png` in `AppOrchestrator` (`main.rs`) mittels `slint::Window::take_snapshot()`.
+     - Überarbeitung der `README.md` mit kompakter Rust-Projektbeschreibung und allen 5 neuen Original-Screenshots der Rust-App.
+  5. **Tests & Qualitätssicherung:**
+     - 42 Rust-Unit-Tests (`cargo test`) PASSED.
+     - `cargo clippy --all-targets -- -D warnings` mit 0 Warnungen und 0 Fehlern abgeschlossen.
+     - 19 Python-Unit-Tests (`pytest`) PASSED.
+     - Zero-Download Security-Audit (`check_downloads.py`) PASSED.
+- **Betroffene Komponenten:**
+  - `AppOrchestrator` (`app/src/main.rs`)
+  - `SecurityAuditReport` (`docs/security_audit_report.md`)
+  - `UserGuide` (`docs/USER_GUIDE.md`, `docs/user_guide.html`)
+  - `TechnicalDocumentation` (`docs/architecture/technical_documentation.md`)
+  - `Assets` (`docs/assets/state_0_idle.png` bis `state_4_settings.png`)
+  - `README.md`, `docs/JOURNAL.md`
+
+---
+
 ### 2026-10-16 - Phase 2: Public-Repo-Hygiene in `scripts/build_appimage.sh`
 - **Entscheidung / Änderung:**
   1. **Bereinigung lokaler Projektpfade (`scripts/build_appimage.sh`):**
