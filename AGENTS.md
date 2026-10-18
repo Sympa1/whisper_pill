@@ -64,7 +64,7 @@ Diese Anweisungen gelten spezifisch für das Repository und die Entwicklung von 
   - Es muss nicht nach jedem einzelnen Zwischenschritt auf Bestätigung gewartet werden.
   - Bei klaren Anforderungen durcharbeiten und das Gesamtergebnis präsentieren. Nur bei echten Zielkonflikten oder unklaren Anforderungen rückfragen.
 - **Test-Ausführung nach jedem Schritt (Pflicht):**
-  - Nach jedem implementierten Schritt oder jeder Code-Änderung ist zwingend der passende Test aus den verfügbaren Test-Skills (`test-core`, `test-ui`, `test-e2e` bzw. `pytest`) eigenständig auszuführen.
+  - Nach jedem implementierten Schritt oder jeder Code-Änderung ist zwingend der passende Test aus den verfügbaren Test-Skills (`test-core`, `unit-testing`, `test-ui`, `test-e2e` bzw. `pytest` / `cargo test`) eigenständig auszuführen.
   - Kein Schritt gilt als abgeschlossen, bevor nicht alle Tests grün durchgelaufen sind.
 - **Lückenlose Dokumentation in `docs/JOURNAL.md` (Pflicht):**
   - Jeder durchgeführte Schritt, jede Architekturentscheidung und jede Änderung ist verbindlich und chronologisch oben in `docs/JOURNAL.md` zu vermerken.

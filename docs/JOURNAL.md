@@ -3,6 +3,61 @@
 Dieses Dokument dient als kontinuierliches Gedächtnis des Projekts. 
 Hier werden fundamentale Architekturentscheidungen, erreichte Meilensteine und offene Punkte chronologisch (neueste Einträge oben) dokumentiert.
 
+### 2026-10-18 - Vollständige Neuerstellung der Benutzer- und Technik-Dokumentation nach Skills-Standard
+- **Entscheidung / Änderung:**
+  1. **Überarbeitung der Endbenutzer-Dokumentation (`docs/USER_GUIDE.md`, `docs/user_guide.html`):**
+     - Gemäß neuem `user-docs`-Skill vollständig strukturiert:
+       - *Willkommen & Überblick:* Kernmerkmale (100 % lokal, Tray-First, portables AppImage).
+       - *Schnellstart (Quickstart in 3 Schritten):* Visueller 3-Schritte-Workflow.
+       - *Mermaid-Diagramme:* User Journey Workflow (`flowchart LR`), Zustandsübergänge (`stateDiagram-v2`) und detaillierter Troubleshooting-Entscheidungsbaum (`flowchart TD`).
+       - *UI-Screenshots aller 6 Zustände:* Einbindung der Screenshots `state_0_idle.png` bis `state_5_installer.png` (inkl. neuem 4-Schritte Slint Installations-Assistenten).
+       - *Plattform-Vergleich & Tastaturtabellen:* Spezifische Anleitungen für KDE Plasma, XFCE und Windows.
+       - *Autarker Zero-CDN HTML-Build (`docs/user_guide.html`):* Vollständiges Offline-HTML mit Dark-Mode-Styling und responsiven Inline-Vektorgrafiken (`<svg>`) ohne externe Tracker, CDNs oder Fonts.
+  2. **Umfassende Aktualisierung der Technischen Architektur-Dokumentation (`docs/architecture/technical_documentation.md`, `docs/TECHNICAL_DOCS.md`):**
+     - Gemäß neuem `tech-docs`-Skill implementiert mit allen 5 standardisierten Mermaid-UML-Diagrammtypen:
+       - *Diagramm A (System- & Schichtenarchitektur):* Presentation (Slint AppWindow & InstallerWindow), Orchestration (AppOrchestrator), Domain (AudioRecorder, VadDetector, WhisperEngine, TextAccumulator), Infrastructure (HotkeyManager, PillTray, KWinPlatform, AutostartPlatform, InstallerPlatform, ClipboardManager).
+       - *Diagramm B (UML-Klassendiagramm):* Vollständige Kapselung aller Services, Manager und Plattform-Module.
+       - *Diagramm C (Multi-Threading-Sequenz):* D-Bus Signalfilterung, Audio-Ingest, VAD-Stilleerkennung, Whisper-Inferenz-Worker, RAM-Zeroing (`*s = 0.0`) und Puffer-Konventionen (`sBuffy` / `iBuffy`).
+       - *Diagramm D (Zustandsautomat):* Gesamte State Machine inklusive aller 7 Laufzeitzustände und des 8s Auto-Dismiss Timers.
+       - *Diagramm E (Daten- & Konfigurationsmodell):* `APP_CONFIG`, `INSTALL_OPTIONS`, `AUDIO_BUFFER` und `TRANSCRIPTION_RESULT`.
+       - *Standardisierter Einstiegspunkt:* Bereitstellung von `docs/TECHNICAL_DOCS.md`.
+  3. **Qualitätssicherung & Tests:**
+     - Zero-Download & Security Scan (`python3 .agent/skills/security-audit/scripts/check_downloads.py .`): **PASSED (0 Befunde)**.
+     - 19 Python-Unit-Tests (`pytest`): **PASSED**.
+     - 46 Rust-Unit-Tests (`cargo test`): **PASSED**.
+- **Betroffene Komponenten:**
+  - `UserGuide` (`docs/USER_GUIDE.md`, `docs/user_guide.html`)
+  - `TechnicalDocs` (`docs/architecture/technical_documentation.md`, `docs/TECHNICAL_DOCS.md`)
+  - `docs/JOURNAL.md`
+
+---
+
+### 2026-10-18 - Antigravity Skills: Synchronisation & Update aus dem AI-Workflow-Baukasten (`ai_dev_sample`)
+- **Entscheidung / Änderung:**
+  1. **Übernahme & Aktualisierung aller modernen Antigravity-Skills (`.agent/skills/`):**
+     - Aus dem zentralen Baukasten (`ai_dev_sample/template_data/antigravity/skills`) wurden alle neuen und aktualisierten Produktions-Skills nach `whisper_pill/.agent/skills/` synchronisiert:
+       - `code-quality-linting`: Statische Code-Analyse mit Ruff und Rust Clippy nach Clean-Code-Standards.
+       - `code-refactoring`: Strukturierter Leitfaden für verhaltensbewahrendes 4-Phasen-Refactoring.
+       - `database-migration`: Schema-Migration und Rollback-Verfahren (SQLite/Alembic).
+       - `unit-testing`: Erweiterter Test-Skill mit Fail-Fast-Abbruchregel für Subagenten.
+       - `gitignore-analyzer`: Aktualisierte Repository-Hygiene und Erkennung großer Modellgewichte/Caches.
+       - `security-audit`: Umfassender Supply-Chain- und Download-Auditor inkl. `scripts/check_downloads.py` (Zero-Download-Check, AST-Netzwerkscan, Download-Inventartabelle, Entropie-Secrets und Injection-Filterung).
+       - `tech-docs`: Standardisierte Mermaid-UML-Dokumentation (5 Diagrammtypen).
+       - `user-docs`: Benutzerhandbuch mit User Journey, Flowcharts, Troubleshooting-Entscheidungsbäumen und Zero-CDN Inline-SVG.
+       - `test-ui` & `test-e2e`: Modernisiert mit Fail-Fast-Protokoll und deterministischer Pufferüberprüfung (`sBuffy`/`iBuffy`).
+  2. **Kompatibilitäts-Symlink (`.agents -> .agent`):**
+     - Einrichtung des Symlinks `.agents` auf `.agent`, sodass sowohl Antigravity-Konventionen (`.agents/skills` als auch `.agent/skills`) nativ aufgelöst werden.
+  3. **Qualitätssicherung & Tests:**
+     - Zero-Download & Security-Audit (`python3 .agent/skills/security-audit/scripts/check_downloads.py .`): **PASSED (0 Befunde, 16 inventarisierte autorisierte Setup-Punkte)**.
+     - 19 Python-Unit-Tests (`pytest`): **PASSED**.
+     - 46 Rust-Unit-Tests (`cargo test`): **PASSED**.
+- **Betroffene Komponenten:**
+  - `Skills` (`.agent/skills/*`, `.agents -> .agent`)
+  - `Harness` (`AGENTS.md`)
+  - `docs/JOURNAL.md`
+
+---
+
 ### 2026-10-17 - Phase 2: Grafischer Installations-Wizard (Rust & Slint Setup-Assistent) für Windows & Linux
 - **Entscheidung / Änderung:**
   1. **Nativer 4-Schritte-Installations-Assistent in Rust & Slint (`InstallerWindow`, `app/ui/installer.slint`, `app/src/platform/installer.rs`):**
